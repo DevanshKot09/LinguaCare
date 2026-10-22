@@ -1,0 +1,32 @@
+{
+  "id": "story_pets_5_11",
+  "version": 1,
+  "status": "draft",
+  "title": "The Morning Routine Story",
+  "domain": "narrative",
+  "type": "story_sequence",
+  "age_band": "5_11",
+  "audience": "parent",
+  "est_minutes": 7,
+  "difficulty": 2,
+  "goal": "Reorder picture cards to build simple narrative sequence.",
+  "steps": [
+    "Look at the scattered picture cards.",
+    "Drag or arrange them in the order they happened.",
+    "Retell the short story to your grown-up."
+  ],
+  "parent_tips": [
+    "Use time words like 'first', 'then', and 'finally' during retell.",
+    "Enjoy creating the story together."
+  ],
+  "content": {
+    "cards": [
+      {"id": "c1", "title": "Wake up", "icon": "⏰", "correct_order": 1},
+      {"id": "c2", "title": "Eat breakfast", "icon": "🥣", "correct_order": 2},
+      {"id": "c3", "title": "Put on shoes", "icon": "👟", "correct_order": 3}
+    ],
+    "retell_prompt": "Tell your grown-up what happened first, next, and last."
+  },
+  "visual_support": true,
+  "strengths_message": "Brilliant storytelling! You put the events in the right order."
+}

@@ -1,0 +1,28 @@
+{
+  "id": "sentence_professional_adult",
+  "version": 1,
+  "status": "draft",
+  "title": "Formal Communication Structure",
+  "domain": "grammar",
+  "type": "sentence_builder",
+  "age_band": "adult",
+  "audience": "adult",
+  "est_minutes": 6,
+  "difficulty": 2,
+  "goal": "Construct formal professional sentences.",
+  "steps": [
+    "Review scrambled phrase chips.",
+    "Assemble into a professional statement.",
+    "Verify grammar."
+  ],
+  "parent_tips": [],
+  "content": {
+    "scrambled_words": ["meeting", "schedule", "please", "the", "we", "should"],
+    "valid_orders": [
+      ["we", "should", "schedule", "the", "meeting"],
+      ["please", "schedule", "the", "meeting"]
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Clear and professional phrasing!"
+}

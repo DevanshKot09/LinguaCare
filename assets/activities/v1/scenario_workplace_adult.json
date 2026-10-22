@@ -1,0 +1,41 @@
+{
+  "id": "scenario_workplace_adult",
+  "version": 1,
+  "status": "draft",
+  "title": "Clarifying Instructions at Work",
+  "domain": "conversation",
+  "type": "scenario_choice",
+  "age_band": "adult",
+  "audience": "adult",
+  "est_minutes": 6,
+  "difficulty": 2,
+  "goal": "Practice asking for clarification respectfully in professional settings.",
+  "steps": [
+    "Read the workplace scenario.",
+    "Select the most effective response.",
+    "Reflect on assertive, clear communication."
+  ],
+  "parent_tips": [],
+  "content": {
+    "scenario": "You receive a task instruction with ambiguous details and want to ensure you meet expectations.",
+    "options": [
+      {
+        "text": "Politely ask: 'Could you clarify the priority and deadline for this specific task?'",
+        "explanation": "Clear, professional, and ensures mutual understanding.",
+        "supportive": true
+      },
+      {
+        "text": "Guess what is needed and hope for the best.",
+        "explanation": "Risks misunderstandings or wasted effort.",
+        "supportive": false
+      },
+      {
+        "text": "Ignore the task.",
+        "explanation": "Avoids the issue but leaves responsibilities unmet.",
+        "supportive": false
+      }
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Effective advocacy! Asking clarifying questions is a sign of strong communication."
+}

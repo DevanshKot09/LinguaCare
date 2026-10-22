@@ -1,0 +1,33 @@
+{
+  "id": "vocab_tech_11_18",
+  "version": 1,
+  "status": "draft",
+  "title": "Digital Terminology",
+  "domain": "vocabulary",
+  "type": "picture_word_match",
+  "age_band": "11_18",
+  "audience": "parent",
+  "est_minutes": 5,
+  "difficulty": 2,
+  "goal": "Expand precise vocabulary for everyday digital and study terms.",
+  "steps": [
+    "Review the term presented.",
+    "Select the accurate definition icon or synonym.",
+    "Discuss how the term applies to school or projects."
+  ],
+  "parent_tips": [
+    "Relate the terms to your teen's daily school projects or hobbies.",
+    "Keep the tone respectful and collaborative."
+  ],
+  "content": {
+    "word": "Backup",
+    "prompt": "Select the correct concept representation:",
+    "options": [
+      {"label": "Deleting files", "icon": "🗑️", "is_correct": false},
+      {"label": "Saving a safe copy", "icon": "💾", "is_correct": true},
+      {"label": "Turning off device", "icon": "🔌", "is_correct": false}
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Sharp thinking! Precise vocabulary helps make your ideas clear."
+}

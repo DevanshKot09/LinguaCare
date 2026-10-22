@@ -1,0 +1,33 @@
+{
+  "id": "follow_instructions_adult",
+  "version": 1,
+  "status": "draft",
+  "title": "Administrative Workflow",
+  "domain": "understanding",
+  "type": "follow_steps",
+  "age_band": "adult",
+  "audience": "adult",
+  "est_minutes": 6,
+  "difficulty": 2,
+  "goal": "Practice sequencing multi-step professional instructions.",
+  "steps": [
+    "Read the sequential workflow steps.",
+    "Arrange or tap them in correct order.",
+    "Review execution flow."
+  ],
+  "parent_tips": [],
+  "content": {
+    "instruction_steps": [
+      {"prompt": "Review requirements", "target": "review"},
+      {"prompt": "Draft response", "target": "draft"},
+      {"prompt": "Submit report", "target": "submit"}
+    ],
+    "available_items": [
+      {"id": "draft", "label": "Draft Response", "icon": "✍️"},
+      {"id": "review", "label": "Review Requirements", "icon": "📖"},
+      {"id": "submit", "label": "Submit Report", "icon": "📤"}
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Logical workflow execution! Structured steps ensure clarity."
+}

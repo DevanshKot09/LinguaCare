@@ -1,0 +1,25 @@
+project_id = "linguacare"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[edge_runtime]
+enabled = true
+
+[functions.set-claims]
+verify_jwt = false
+
+[functions.send-otp]
+verify_jwt = false
+
+[functions.verify-otp]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

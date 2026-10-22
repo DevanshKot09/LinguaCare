@@ -1,0 +1,42 @@
+name: linguacare
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.1.0
+  firebase_core: ^5.0.0
+  firebase_auth: ^7.0.0
+  supabase_flutter: ^2.18.3
+  google_fonts: ^9.0.0
+  lottie: ^3.6.1
+  shared_preferences: ^2.5.6
+  path_provider: ^2.1.5
+  intl: ^0.20.3
+  google_sign_in: ^7.2.0
+  fl_chart: ^0.70.2
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/content/v1/
+    - assets/content/v1/items/
+    - assets/screening/v1/
+    - assets/activities/v1/

@@ -1,0 +1,43 @@
+{
+  "id": "scenario_group_11_18",
+  "version": 1,
+  "status": "draft",
+  "title": "Group Project Disagreement",
+  "domain": "conversation",
+  "type": "scenario_choice",
+  "age_band": "11_18",
+  "audience": "parent",
+  "est_minutes": 7,
+  "difficulty": 3,
+  "goal": "Navigate collaborative discussions and compromises respectfully.",
+  "steps": [
+    "Read the group dilemma.",
+    "Evaluate the response choices.",
+    "Discuss constructive communication strategies."
+  ],
+  "parent_tips": [
+    "Encourage active listening and validating other viewpoints."
+  ],
+  "content": {
+    "scenario": "Your group disagrees on which topic to choose for a presentation. Everyone has a different preference.",
+    "options": [
+      {
+        "text": "Suggest listing each idea on a board and voting together.",
+        "explanation": "Fair, structured, and respects everyone's voice.",
+        "supportive": true
+      },
+      {
+        "text": "Insist on your own idea and refuse to listen to others.",
+        "explanation": "Can cause frustration and halt teamwork.",
+        "supportive": false
+      },
+      {
+        "text": "Stay silent and let others argue.",
+        "explanation": "Avoids conflict, but your perspective is lost.",
+        "supportive": false
+      }
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Great collaborative problem-solving! Communication bridges differences."
+}

@@ -1,0 +1,35 @@
+{
+  "id": "follow_shapes_5_11",
+  "version": 1,
+  "status": "draft",
+  "title": "Shape and Colour Journey",
+  "domain": "understanding",
+  "type": "follow_steps",
+  "age_band": "5_11",
+  "audience": "parent",
+  "est_minutes": 6,
+  "difficulty": 1,
+  "goal": "Practice following 1 to 2 step instructions using shapes and colors.",
+  "steps": [
+    "Read the instruction aloud together.",
+    "Tap the shapes in the exact order requested.",
+    "Use 'Show me again' if needed without any penalty."
+  ],
+  "parent_tips": [
+    "Break instructions into small steps if your child hesitates.",
+    "Keep things playful and relaxed."
+  ],
+  "content": {
+    "instruction_steps": [
+      {"prompt": "Tap the blue circle", "target": "blue_circle"},
+      {"prompt": "Then tap the yellow star", "target": "yellow_star"}
+    ],
+    "available_items": [
+      {"id": "blue_circle", "label": "Blue Circle", "icon": "🔵"},
+      {"id": "yellow_star", "label": "Yellow Star", "icon": "⭐"},
+      {"id": "red_square", "label": "Red Square", "icon": "🟥"}
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Fantastic listening and stepping! You followed the instructions step by step."
+}

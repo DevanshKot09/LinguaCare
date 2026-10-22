@@ -1,0 +1,31 @@
+{
+  "id": "story_event_11_18",
+  "version": 1,
+  "status": "draft",
+  "title": "Science Project Narrative",
+  "domain": "narrative",
+  "type": "story_sequence",
+  "age_band": "11_18",
+  "audience": "parent",
+  "est_minutes": 7,
+  "difficulty": 2,
+  "goal": "Sequence project milestone events correctly.",
+  "steps": [
+    "Examine the milestone cards.",
+    "Arrange them from start to finish.",
+    "Summarize the project timeline."
+  ],
+  "parent_tips": [
+    "Highlight logical connectors like 'consequently' or 'subsequently'."
+  ],
+  "content": {
+    "cards": [
+      {"id": "m1", "title": "Research topic", "icon": "🔍", "correct_order": 1},
+      {"id": "m2", "title": "Build experiment", "icon": "🧪", "correct_order": 2},
+      {"id": "m3", "title": "Present findings", "icon": "📊", "correct_order": 3}
+    ],
+    "retell_prompt": "Summarize how the project progressed from start to finish."
+  },
+  "visual_support": true,
+  "strengths_message": "Clear sequencing! Structuring events helps others follow your thinking."
+}

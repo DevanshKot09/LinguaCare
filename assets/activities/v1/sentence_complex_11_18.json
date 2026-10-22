@@ -1,0 +1,30 @@
+{
+  "id": "sentence_complex_11_18",
+  "version": 1,
+  "status": "draft",
+  "title": "Connecting Ideas",
+  "domain": "grammar",
+  "type": "sentence_builder",
+  "age_band": "11_18",
+  "audience": "parent",
+  "est_minutes": 6,
+  "difficulty": 2,
+  "goal": "Build complex sentences using conjunctions.",
+  "steps": [
+    "Examine the scattered phrase chips.",
+    "Assemble them into a cohesive complex sentence.",
+    "Verify the sentence grammar."
+  ],
+  "parent_tips": [
+    "Notice how connecting words link causes and effects."
+  ],
+  "content": {
+    "scrambled_words": ["because", "studied", "passed", "she", "test", "the", "she"],
+    "valid_orders": [
+      ["she", "passed", "the", "test", "because", "she", "studied"],
+      ["because", "she", "studied", "she", "passed", "the", "test"]
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Strong grammar structure! Complex sentences express rich ideas clearly."
+}

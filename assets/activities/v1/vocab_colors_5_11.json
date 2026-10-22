@@ -1,0 +1,33 @@
+{
+  "id": "vocab_colors_5_11",
+  "version": 1,
+  "status": "draft",
+  "title": "Colour and Object Matching",
+  "domain": "vocabulary",
+  "type": "picture_word_match",
+  "age_band": "5_11",
+  "audience": "parent",
+  "est_minutes": 5,
+  "difficulty": 1,
+  "goal": "Build everyday vocabulary by linking words to visual icons.",
+  "steps": [
+    "Look at the word shown on the screen.",
+    "Find the matching icon or color object.",
+    "Tap the correct item together with your child."
+  ],
+  "parent_tips": [
+    "Say the word clearly and wait patiently for your child to respond.",
+    "Celebrate any effort, even if they need a second try."
+  ],
+  "content": {
+    "word": "Apple",
+    "prompt": "Find the picture that matches the word:",
+    "options": [
+      {"label": "Banana", "icon": "🍌", "is_correct": false},
+      {"label": "Apple", "icon": "🍎", "is_correct": true},
+      {"label": "Grapes", "icon": "🍇", "is_correct": false}
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Wonderful focus! You are great at connecting words and pictures."
+}

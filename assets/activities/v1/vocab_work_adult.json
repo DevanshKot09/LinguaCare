@@ -1,0 +1,30 @@
+{
+  "id": "vocab_work_adult",
+  "version": 1,
+  "status": "draft",
+  "title": "Professional Terminology",
+  "domain": "vocabulary",
+  "type": "picture_word_match",
+  "age_band": "adult",
+  "audience": "adult",
+  "est_minutes": 5,
+  "difficulty": 2,
+  "goal": "Reinforce workplace communication vocabulary.",
+  "steps": [
+    "Review the professional term.",
+    "Match it with its appropriate context icon.",
+    "Reflect on daily application."
+  ],
+  "parent_tips": [],
+  "content": {
+    "word": "Agenda",
+    "prompt": "Select the icon representing a meeting schedule:",
+    "options": [
+      {"label": "Clock", "icon": "⏰", "is_correct": false},
+      {"label": "Meeting Agenda", "icon": "📋", "is_correct": true},
+      {"label": "Coffee mug", "icon": "☕", "is_correct": false}
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Excellent lexical precision for professional contexts."
+}

@@ -1,0 +1,191 @@
+{
+  "id": "adult",
+  "version": "1.0.0",
+  "status": "draft",
+  "audience": "adult",
+  "age_band": "adult",
+  "estimated_minutes": 5,
+  "intro_text": "placeholder_intro_adult",
+  "domains": [
+    {"id": "understanding", "name": "Understanding Language"},
+    {"id": "words", "name": "Words & Vocabulary"},
+    {"id": "grammar", "name": "Grammar & Sentences"},
+    {"id": "stories", "name": "Stories & Explanations"},
+    {"id": "conversation", "name": "Conversation & Social Use"}
+  ],
+  "items": [
+    {
+      "id": "ad_1",
+      "text": "How often do you find it difficult to follow complex spoken instructions or meetings without written notes?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["attention"]
+    },
+    {
+      "id": "ad_2",
+      "text": "How easily do you grasp sarcasm, idioms, and figurative expressions in everyday discussions?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "ad_3",
+      "text": "How often do you struggle to retrieve common words or names during conversation (tip-of-the-tongue phenomenon)?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "ad_4",
+      "text": "How effectively do you express your thoughts using precise vocabulary?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "ad_5",
+      "text": "How often do you find yourself structuring sentences simply to avoid grammatical confusion?",
+      "domain": "grammar",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "ad_6",
+      "text": "How comfortably do you construct complex sentences when writing professional emails or reports?",
+      "domain": "grammar",
+      "scale_type": "frequency",
+      "direction": false,
+      "also_check": ["reading"]
+    },
+    {
+      "id": "ad_7",
+      "text": "How often do you find it challenging to organize and summarize lengthy explanations or stories?",
+      "domain": "stories",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "ad_8",
+      "text": "How easily can you recount a sequence of events or explain a process clearly to others?",
+      "domain": "stories",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "ad_9",
+      "text": "How often do you misread conversational cues or feel out of sync in fast-paced group chats?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["social_communication"]
+    },
+    {
+      "id": "ad_10",
+      "text": "How comfortably do you participate in casual or professional networking conversations?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "ad_11",
+      "text": "How often do you ask people to repeat themselves in noisy environments like restaurants?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["hearing"]
+    },
+    {
+      "id": "ad_12",
+      "text": "How frequently do speech clarity or pronunciation concerns affect your confidence in public speaking?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["speech_sounds"]
+    },
+    {
+      "id": "ad_13",
+      "text": "How often do written workplace communications require extra time and effort for you to decode?",
+      "domain": "stories",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["reading"]
+    },
+    {
+      "id": "ad_14",
+      "text": "How often do you avoid social interactions or meetings due to anxiety about verbal expression?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "ad_15",
+      "text": "How well do you adapt your register and tone when communicating with diverse audiences?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "ad_16",
+      "text": "How often do you notice sudden, unexplained difficulties in your language or memory processing?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": true,
+      "urgent": true
+    },
+    {
+      "id": "ad_17",
+      "text": "How comfortably do you navigate multiple languages in daily life, if applicable?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": false,
+      "also_check": ["multiple_languages"]
+    },
+    {
+      "id": "ad_18",
+      "text": "How often do grammatical or structural errors slip into your written work without you noticing?",
+      "domain": "grammar",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "ad_19",
+      "text": "How easily do you maintain the thread of a discussion when multiple people are talking?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "ad_20",
+      "text": "How often do you rely heavily on outlines or templates to structure spoken presentations?",
+      "domain": "stories",
+      "scale_type": "frequency",
+      "direction": true
+    }
+  ],
+  "scoring": {
+    "min_answered_per_domain": 2,
+    "domain_levels": {
+      "strength": {"max": 25},
+      "typical_range": {"min": 26, "max": 50},
+      "some_signs": {"min": 51, "max": 75},
+      "more_signs": {"min": 76, "max": 100}
+    },
+    "risk_rules": {
+      "high_threshold_count": 2,
+      "some_threshold_count": 1
+    },
+    "confidence_thresholds": {
+      "high": 0.90,
+      "medium": 0.70
+    }
+  },
+  "wording": {
+    "risk": {
+      "low": "No strong signs noticed in this check",
+      "some_signs": "Some signs worth keeping an eye on",
+      "high": "Several signs that may be worth discussing with a speech-language professional",
+      "not_enough_info": "We need a few more answers to provide a profile"
+    }
+  }
+}

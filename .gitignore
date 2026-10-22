@@ -1,0 +1,73 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+**/android/local.properties
+**/android/key.properties
+*.jks
+*.keystore
+
+# iOS / macOS Flutter generated files
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/Generated.xcconfig
+**/macos/Flutter/flutter_export_environment.sh
+**/macos/Flutter/ephemeral/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Widget Preview related
+.widget_preview/
+
+# Environment config
+env/*.json
+!env/dev.example.json
+
+# Supabase secrets, service accounts & temp
+supabase/.env*
+supabase/service-account*.json
+supabase/.temp/
+
+# Firebase credentials & configs
+android/app/google-services.json
+!android/app/google-services.example.json
+ios/Runner/GoogleService-Info.plist
+!ios/Runner/GoogleService-Info.example.plist
+lib/firebase_options.dart
+!lib/firebase_options.example.dart

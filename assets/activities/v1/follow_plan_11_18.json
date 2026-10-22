@@ -1,0 +1,36 @@
+{
+  "id": "follow_plan_11_18",
+  "version": 1,
+  "status": "draft",
+  "title": "Multi-Step Study Plan",
+  "domain": "understanding",
+  "type": "follow_steps",
+  "age_band": "11_18",
+  "audience": "parent",
+  "est_minutes": 6,
+  "difficulty": 2,
+  "goal": "Practice organizing multi-step instructions logically.",
+  "steps": [
+    "Read the multi-step study instruction.",
+    "Tap the task elements in chronological order.",
+    "Review your structured plan."
+  ],
+  "parent_tips": [
+    "Discuss how breaking large tasks down reduces overwhelm.",
+    "Praise persistence and organization."
+  ],
+  "content": {
+    "instruction_steps": [
+      {"prompt": "First, review notes", "target": "notes"},
+      {"prompt": "Then, draft outline", "target": "outline"},
+      {"prompt": "Finally, write summary", "target": "summary"}
+    ],
+    "available_items": [
+      {"id": "outline", "label": "Draft Outline", "icon": "📝"},
+      {"id": "notes", "label": "Review Notes", "icon": "📚"},
+      {"id": "summary", "label": "Write Summary", "icon": "💻"}
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Excellent organization! Breaking steps down makes any project manageable."
+}

@@ -1,0 +1,191 @@
+{
+  "id": "parent_11_18",
+  "version": "1.0.0",
+  "status": "draft",
+  "audience": "parent",
+  "age_band": "11_18",
+  "estimated_minutes": 5,
+  "intro_text": "placeholder_intro_parent_11_18",
+  "domains": [
+    {"id": "understanding", "name": "Understanding Language"},
+    {"id": "words", "name": "Words & Vocabulary"},
+    {"id": "grammar", "name": "Grammar & Sentences"},
+    {"id": "stories", "name": "Stories & Explanations"},
+    {"id": "conversation", "name": "Conversation & Social Use"}
+  ],
+  "items": [
+    {
+      "id": "p11_1",
+      "text": "How often does your adolescent find it difficult to follow multi-step academic or complex verbal instructions?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["attention"]
+    },
+    {
+      "id": "p11_2",
+      "text": "How easily does your teen grasp abstract concepts and figurative language (metaphors, idioms) in conversation?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "p11_3",
+      "text": "How often does your teen struggle to retrieve specific words, relying instead on vague descriptions ('thing', 'over there')?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "p11_4",
+      "text": "How effectively does your teen use rich vocabulary appropriate for their age level?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "p11_5",
+      "text": "How often does your teen produce grammatically complex sentences with proper clause structures?",
+      "domain": "grammar",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "p11_6",
+      "text": "How often does your teen make grammatical errors when writing or speaking at length?",
+      "domain": "grammar",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["reading"]
+    },
+    {
+      "id": "p11_7",
+      "text": "How often does your teen have difficulty organizing and summarizing a long story or textbook chapter?",
+      "domain": "stories",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "p11_8",
+      "text": "How well does your teen explain complex events or arguments in a logical, coherent sequence?",
+      "domain": "stories",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "p11_9",
+      "text": "How often does your teen misinterpret subtle social cues, sarcasm, or peer humor?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["social_communication"]
+    },
+    {
+      "id": "p11_10",
+      "text": "How comfortably does your teen engage in reciprocal group conversations and debates?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "p11_11",
+      "text": "How often does your teen ask for clarification because they missed spoken details in noisy environments?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["hearing"]
+    },
+    {
+      "id": "p11_12",
+      "text": "How frequently do pronunciation or articulation patterns make your teen's speech unclear during rapid conversation?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["speech_sounds"]
+    },
+    {
+      "id": "p11_13",
+      "text": "How often does your teen struggle with reading comprehension or academic writing tasks due to language barriers?",
+      "domain": "stories",
+      "scale_type": "frequency",
+      "direction": true,
+      "also_check": ["reading"]
+    },
+    {
+      "id": "p11_14",
+      "text": "How often does your teen withdraw from social discussions due to frustration with expressing complex thoughts?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "p11_15",
+      "text": "How well does your teen adapt their communication style depending on who they are talking to (peer vs adult)?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "p11_16",
+      "text": "How often does your teen struggle to construct multi-clause sentences when explaining their reasoning?",
+      "domain": "grammar",
+      "scale_type": "frequency",
+      "direction": true
+    },
+    {
+      "id": "p11_17",
+      "text": "How easily does your teen navigate specialized academic or technical vocabulary across subjects?",
+      "domain": "words",
+      "scale_type": "frequency",
+      "direction": false
+    },
+    {
+      "id": "p11_18",
+      "text": "How often does your teen show sudden regression or acute decline in communication abilities?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": true,
+      "urgent": true
+    },
+    {
+      "id": "p11_19",
+      "text": "How comfortably does your teen function across multiple languages or cultural contexts?",
+      "domain": "conversation",
+      "scale_type": "frequency",
+      "direction": false,
+      "also_check": ["multiple_languages"]
+    },
+    {
+      "id": "p11_20",
+      "text": "How often does your teen need written summaries to supplement verbal instructions?",
+      "domain": "understanding",
+      "scale_type": "frequency",
+      "direction": true
+    }
+  ],
+  "scoring": {
+    "min_answered_per_domain": 2,
+    "domain_levels": {
+      "strength": {"max": 25},
+      "typical_range": {"min": 26, "max": 50},
+      "some_signs": {"min": 51, "max": 75},
+      "more_signs": {"min": 76, "max": 100}
+    },
+    "risk_rules": {
+      "high_threshold_count": 2,
+      "some_threshold_count": 1
+    },
+    "confidence_thresholds": {
+      "high": 0.90,
+      "medium": 0.70
+    }
+  },
+  "wording": {
+    "risk": {
+      "low": "No strong signs noticed in this check",
+      "some_signs": "Some signs worth keeping an eye on",
+      "high": "Several signs that may be worth discussing with a speech-language professional",
+      "not_enough_info": "We need a few more answers to provide a profile"
+    }
+  }
+}

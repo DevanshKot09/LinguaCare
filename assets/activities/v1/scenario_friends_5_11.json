@@ -1,0 +1,44 @@
+{
+  "id": "scenario_friends_5_11",
+  "version": 1,
+  "status": "draft",
+  "title": "Joining a Game",
+  "domain": "conversation",
+  "type": "scenario_choice",
+  "age_band": "5_11",
+  "audience": "parent",
+  "est_minutes": 6,
+  "difficulty": 2,
+  "goal": "Explore friendly ways to join others in play.",
+  "steps": [
+    "Read the everyday scenario together.",
+    "Choose a helpful response option.",
+    "Talk about why this response works well."
+  ],
+  "parent_tips": [
+    "Discuss how different responses make people feel.",
+    "There is no right/wrong shaming—just exploring options."
+  ],
+  "content": {
+    "scenario": "Your friends are building a tall block tower. You want to join them.",
+    "options": [
+      {
+        "text": "Walk up, smile, and ask: 'Can I help build the tower?'",
+        "explanation": "Friendly and clear; invites teamwork.",
+        "supportive": true
+      },
+      {
+        "text": "Grab some blocks and knock it down.",
+        "explanation": "Might upset your friends and stop the game.",
+        "supportive": false
+      },
+      {
+        "text": "Stand quietly and watch from far away.",
+        "explanation": "Safe, but makes it hard for friends to know you want to play.",
+        "supportive": false
+      }
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Thoughtful choice! Knowing how to join in makes playtime fun for everyone."
+}

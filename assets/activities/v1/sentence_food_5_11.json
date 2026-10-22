@@ -1,0 +1,30 @@
+{
+  "id": "sentence_food_5_11",
+  "version": 1,
+  "status": "draft",
+  "title": "Hungry Little Sentence",
+  "domain": "grammar",
+  "type": "sentence_builder",
+  "age_band": "5_11",
+  "audience": "parent",
+  "est_minutes": 5,
+  "difficulty": 1,
+  "goal": "Arrange word chips into a simple grammatically correct sentence.",
+  "steps": [
+    "Look at the jumbled word chips.",
+    "Tap or drag them into the correct sentence order.",
+    "Read the completed sentence aloud."
+  ],
+  "parent_tips": [
+    "Model the sentence naturally if your child is unsure.",
+    "Focus on word order and phrasing."
+  ],
+  "content": {
+    "scrambled_words": ["apple", "I", "eat"],
+    "valid_orders": [
+      ["I", "eat", "apple"]
+    ]
+  },
+  "visual_support": true,
+  "strengths_message": "Great sentence building! Words fit together perfectly when we plan them."
+}

@@ -1,0 +1,29 @@
+{
+  "id": "story_recount_adult",
+  "version": 1,
+  "status": "draft",
+  "title": "Project Milestone Recount",
+  "domain": "narrative",
+  "type": "story_sequence",
+  "age_band": "adult",
+  "audience": "adult",
+  "est_minutes": 7,
+  "difficulty": 2,
+  "goal": "Structure professional project narratives chronologically.",
+  "steps": [
+    "Examine project milestones.",
+    "Order them from initiation to completion.",
+    "Review chronological coherence."
+  ],
+  "parent_tips": [],
+  "content": {
+    "cards": [
+      {"id": "p1", "title": "Project kickoff", "icon": "🚀", "correct_order": 1},
+      {"id": "p2", "title": "Milestone review", "icon": "📈", "correct_order": 2},
+      {"id": "p3", "title": "Final delivery", "icon": "🎯", "correct_order": 3}
+    ],
+    "retell_prompt": "Recount the project lifecycle in professional terms."
+  },
+  "visual_support": true,
+  "strengths_message": "Clear narrative arc! Chronological structure enhances professional storytelling."
+}
