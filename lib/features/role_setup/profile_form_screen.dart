@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,8 @@ import '../auth/widgets/app_text_field.dart';
 import '../auth/widgets/auth_scaffold.dart';
 import '../auth/widgets/inline_error.dart';
 import '../auth/widgets/primary_button.dart';
+import '../settings/privacy_policy_screen.dart';
+import '../settings/terms_of_service_screen.dart';
 
 class ProfileFormScreen extends ConsumerStatefulWidget {
   final String roleStr;
@@ -23,6 +26,9 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _countryController = TextEditingController(text: 'United States');
+
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
 
   final _professionController = TextEditingController();
   final _licenceNoController = TextEditingController();
@@ -55,7 +61,28 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TermsOfServiceScreen()),
+        );
+      };
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+        );
+      };
+  }
+
+  @override
   void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     _nameController.dispose();
     _countryController.dispose();
     _professionController.dispose();
@@ -313,25 +340,128 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
             const SizedBox(height: 16),
             const Text('Legal & Privacy Consents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text(
-              'Placeholder notice (needs legal review): LinguaCare is supportive and non-diagnostic.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.shield_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'DPDP Act 2023 Notice: LinguaCare processes language development data with purpose limitation and strict confidentiality. LinguaCare is supportive and non-diagnostic.',
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85)),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              value: _agreeTerms,
-              onChanged: (val) => setState(() => _agreeTerms = val ?? false),
-              title: const Text('I agree to the Terms of Use and Privacy Policy (v1.0)', style: TextStyle(fontSize: 13)),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => setState(() => _agreeTerms = !_agreeTerms),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: _agreeTerms,
+                        onChanged: (val) => setState(() => _agreeTerms = val ?? false),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'I agree to the ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Terms of Use',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: _termsRecognizer,
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: _privacyRecognizer,
+                            ),
+                            const TextSpan(text: ' (v1.0).'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             if (_role == UserRole.parent && _addChild)
-              CheckboxListTile(
-                value: _agreeData,
-                onChanged: (val) => setState(() => _agreeData = val ?? false),
-                title: const Text('I consent to parental data processing for my child (v1.0)', style: TextStyle(fontSize: 13)),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: InkWell(
+                  onTap: () => setState(() => _agreeData = !_agreeData),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _agreeData,
+                            onChanged: (val) => setState(() => _agreeData = val ?? false),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(
+                              text: 'As parent/guardian, I provide verifiable consent for processing my child\'s language development data in accordance with ',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'Section 9 of the DPDP Act 2023',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                  recognizer: _privacyRecognizer,
+                                ),
+                                const TextSpan(text: ' (No ads, zero commercial tracking).'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             const SizedBox(height: 24),
             PrimaryButton(

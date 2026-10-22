@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../data/repositories/firebase_auth_repository.dart';
 import '../../domain/auth/auth_failure.dart';
 import '../../l10n/app_localizations.dart';
+import '../settings/privacy_policy_screen.dart';
+import '../settings/terms_of_service_screen.dart';
 import 'widgets/app_text_field.dart';
 import 'widgets/auth_scaffold.dart';
 import 'widgets/inline_error.dart';
@@ -23,6 +26,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _agreedToTerms = false;
@@ -30,7 +36,28 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TermsOfServiceScreen()),
+        );
+      };
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+        );
+      };
+  }
+
+  @override
   void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -160,12 +187,59 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               },
             ),
             const SizedBox(height: 16),
-            CheckboxListTile(
-              value: _agreedToTerms,
-              onChanged: (val) => setState(() => _agreedToTerms = val ?? false),
-              title: Text(l10n.termsAgreement, style: const TextStyle(fontSize: 14)),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
+            InkWell(
+              onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: _agreedToTerms,
+                        onChanged: (val) => setState(() => _agreedToTerms = val ?? false),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'I agree to the ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: _termsRecognizer,
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: _privacyRecognizer,
+                            ),
+                            const TextSpan(text: ' (DPDP Act compliant).'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             PrimaryButton(

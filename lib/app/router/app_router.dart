@@ -12,6 +12,8 @@ import '../../features/auth/forgot_password_screen.dart';
 import '../../features/role_setup/role_setup_screen.dart';
 import '../../features/role_setup/profile_form_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/settings/privacy_policy_screen.dart';
+import '../../features/settings/terms_of_service_screen.dart';
 import '../../features/parent/parent_home_screen.dart';
 import '../../features/teacher/teacher_home_screen.dart';
 import '../../features/adult/adult_home_screen.dart';
@@ -39,7 +41,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       } else if (session.isFirstLaunch && !session.onboardingDone) {
         if (path != '/onboarding') target = '/onboarding';
       } else if (session.status == AuthSessionStatus.unauthenticated) {
-        const publicAuthPaths = ['/welcome', '/login', '/sign-up', '/forgot-password', '/onboarding'];
+        const publicAuthPaths = ['/welcome', '/login', '/sign-up', '/forgot-password', '/onboarding', '/privacy-policy', '/terms-of-service'];
         if (!publicAuthPaths.contains(path)) {
           target = '/welcome';
         }
@@ -89,6 +91,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: '/privacy-policy', builder: (context, state) => const PrivacyPolicyScreen()),
+      GoRoute(path: '/terms-of-service', builder: (context, state) => const TermsOfServiceScreen()),
       GoRoute(path: '/tools', builder: (context, state) => const ToolsHubScreen()),
       GoRoute(path: '/parent', builder: (context, state) => const ParentHomeScreen()),
       GoRoute(path: '/teacher', builder: (context, state) => const TeacherHomeScreen()),

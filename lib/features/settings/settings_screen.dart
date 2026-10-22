@@ -11,6 +11,7 @@ import '../auth/widgets/primary_button.dart';
 import '../../core/local_store/local_store.dart';
 import 'about_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
 import 'faq_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -185,9 +186,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             ListTile(
               title: const Text('Privacy and Your Data'),
-              subtitle: const Text('Plain-language summary and local data policies'),
+              subtitle: const Text('DPDP Act 2023 summary and privacy policies'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen())),
+            ),
+            ListTile(
+              title: const Text('Terms of Service'),
+              subtitle: const Text('User agreement and non-clinical disclaimer'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsOfServiceScreen())),
             ),
             ListTile(
               title: const Text('Help and FAQ'),
