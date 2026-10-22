@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/sharing/sharing_providers.dart';
 import '../../domain/sharing/sharing_models.dart';
+import '../export/export_action_widget.dart';
+import '../export/summary_document.dart';
 
 class SharedSummaryDetailScreen extends ConsumerWidget {
   final String linkId;
@@ -34,7 +36,8 @@ class SharedSummaryDetailScreen extends ConsumerWidget {
     final observations = summary.observations.where((o) => o['private'] != true).toList();
     final goals = summary.goals;
     final showNotes = summary.scope == 'progress_notes';
-    
+    const sessionRole = 'specialist';
+
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
@@ -61,6 +64,59 @@ class SharedSummaryDetailScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text('Active Scope: ${summary.scope.toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  final screenings = summary.screeningSessions.map((s) => SummaryScreeningItem(
+                    date: s['created_at']?.toString().split('T').first ?? '',
+                    instrumentVersion: s['instrument_version']?.toString() ?? 'v1',
+                    riskWording: s['risk_level']?.toString() ?? 'Unknown',
+                    domainLevels: [],
+                    alsoCheckFlags: [],
+                    urgentNoticeTriggered: false,
+                    confidence: 'High',
+                    isPrototype: s['instrument_status'] != 'published',
+                  )).toList();
+
+                  final practices = summary.activitySessions.map((a) => SummaryPracticeItem(
+                    domain: a['domain']?.toString() ?? 'General',
+                    summaryText: 'Activity practice completed',
+                    durationMinutes: (a['duration_s'] ?? 0) ~/ 60,
+                    supportLevel: a['support_level']?.toString() ?? 'independent',
+                    date: a['date']?.toString() ?? '',
+                  )).toList();
+
+                  final goalList = summary.goals.map((g) => SummaryGoalItem(
+                    description: g['description']?.toString() ?? '',
+                    domain: g['domain']?.toString() ?? 'General',
+                    status: g['status']?.toString() ?? 'active',
+                    progress: g['progress'] ?? 0,
+                  )).toList();
+
+                  final obsList = summary.observations.map((o) => SummaryObservationItem(
+                    note: o['note']?.toString() ?? '',
+                    setting: o['setting']?.toString() ?? 'General',
+                    date: o['created_at']?.toString().split('T').first ?? '',
+                    isPrivate: o['private'] == true,
+                    isOwnObservation: false,
+                  )).toList();
+
+                  showExportSummaryDialog(
+                    context: context,
+                    role: sessionRole,
+                    scope: summary.scope,
+                    subjectNickname: childName,
+                    subjectAgeBand: '5-11 yrs',
+                    isAccessEnded: false,
+                    screeningSessions: screenings,
+                    practiceItems: practices,
+                    goalItems: goalList,
+                    rawObservations: obsList,
+                  );
+                },
+                icon: const Icon(Icons.picture_as_pdf_rounded),
+                label: const Text('Export Summary PDF'),
+              ),
             ],
           ),
         ),
