@@ -166,6 +166,20 @@ class AppSessionNotifier extends ValueNotifier<AppSessionState> {
     }
   }
 
+  Future<void> refreshSession() async {
+    if (_disposed) return;
+    try {
+      final authRepo = _ref.read(authRepositoryProvider);
+      final currentUser = await authRepo.getCurrentUser();
+      if (_disposed) return;
+      await _updateState(currentUser, value.onboardingDone);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Session] refreshSession error: $e');
+      }
+    }
+  }
+
   int _updateGeneration = 0;
 
   Future<void> _updateState(domain.AuthUser? user, bool onboardingDone) async {

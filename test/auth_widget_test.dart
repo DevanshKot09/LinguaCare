@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:linguacare/app/router/app_session.dart';
 import 'package:linguacare/data/repositories/firebase_auth_repository.dart';
 import 'package:linguacare/domain/auth/auth_repository.dart';
@@ -66,6 +67,10 @@ class FakeAuthRepository implements AuthRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
   testWidgets('SignUp validation error messages', (WidgetTester tester) async {
     final fakeRepo = FakeAuthRepository();

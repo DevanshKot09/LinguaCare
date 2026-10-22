@@ -92,12 +92,25 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       final authRepo = ref.read(authRepositoryProvider);
       await authRepo.verifyOtp(code);
       if (!mounted) return;
+
+      try {
+        await ref.read(appSessionProvider).refreshSession();
+      } catch (_) {}
+
+      if (!mounted) return;
+      _navigateForward();
+      return;
     } on AuthFailure catch (e) {
       // Check if user is already verified despite error
       final currentUser = await ref.read(authRepositoryProvider).getCurrentUser();
       if (currentUser != null && currentUser.emailVerified) {
         // Already verified, proceed successfully
         if (!mounted) return;
+        try {
+          await ref.read(appSessionProvider).refreshSession();
+        } catch (_) {}
+        if (!mounted) return;
+        _navigateForward();
         return;
       }
 
@@ -118,6 +131,11 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       final currentUser = await ref.read(authRepositoryProvider).getCurrentUser();
       if (currentUser != null && currentUser.emailVerified) {
         if (!mounted) return;
+        try {
+          await ref.read(appSessionProvider).refreshSession();
+        } catch (_) {}
+        if (!mounted) return;
+        _navigateForward();
         return;
       }
       setState(() {
@@ -129,6 +147,25 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  void _navigateForward() {
+    final session = ref.read(appSessionStateProvider);
+    if (session.status == AuthSessionStatus.authenticated && session.role != null) {
+      final home = switch (session.role!) {
+        UserRole.parent => '/parent',
+        UserRole.teacher => '/teacher',
+        UserRole.adult => '/adult',
+        UserRole.specialist => '/specialist',
+      };
+      try {
+        context.go(home);
+      } catch (_) {}
+    } else {
+      try {
+        context.go('/role-setup');
+      } catch (_) {}
     }
   }
 

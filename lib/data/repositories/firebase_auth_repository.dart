@@ -203,7 +203,10 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<domain.AuthUser?> getCurrentUser() async {
     final user = _firebaseAuth.currentUser;
     if (user == null) return null;
-    return await _buildAuthUser(user);
+    try {
+      await user.reload();
+    } catch (_) {}
+    return await _buildAuthUser(_firebaseAuth.currentUser ?? user);
   }
 
   @override
