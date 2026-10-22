@@ -450,15 +450,16 @@ class _ActivityPlayerScreenState extends ConsumerState<ActivityPlayerScreen> {
   }
 
   Future<bool> _confirmExit(BuildContext context) async {
+    final navigator = Navigator.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Exit Activity?'),
         content: const Text('Your progress for this session will not be saved if you exit now.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Continue Practice')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Continue Practice')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Exit'),
           ),
@@ -466,7 +467,7 @@ class _ActivityPlayerScreenState extends ConsumerState<ActivityPlayerScreen> {
       ),
     );
     if (confirmed == true && mounted) {
-      Navigator.of(context).pop();
+      navigator.pop();
     }
     return confirmed ?? false;
   }

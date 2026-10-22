@@ -93,7 +93,7 @@ class _InviteDialogState extends ConsumerState<InviteDialog> {
               if (_result == null) ...[
                 const Text('Role', style: TextStyle(fontWeight: FontWeight.bold)),
                 DropdownButtonFormField<String>(
-                  value: _targetRole,
+                  initialValue: _targetRole,
                   decoration: const InputDecoration(border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 'teacher', child: Text('Teacher')),
@@ -104,7 +104,7 @@ class _InviteDialogState extends ConsumerState<InviteDialog> {
                 const SizedBox(height: 16),
                 const Text('Scope of Sharing', style: TextStyle(fontWeight: FontWeight.bold)),
                 DropdownButtonFormField<String>(
-                  value: _scope,
+                  initialValue: _scope,
                   decoration: const InputDecoration(border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 'progress', child: Text('Progress (Screening & Activities)')),
@@ -115,7 +115,7 @@ class _InviteDialogState extends ConsumerState<InviteDialog> {
                 const SizedBox(height: 16),
                 const Text('Access Duration', style: TextStyle(fontWeight: FontWeight.bold)),
                 DropdownButtonFormField<int>(
-                  value: _accessMonths,
+                  initialValue: _accessMonths,
                   decoration: const InputDecoration(border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 3, child: Text('3 Months')),

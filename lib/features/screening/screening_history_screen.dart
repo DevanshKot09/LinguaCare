@@ -10,10 +10,10 @@ class ScreeningHistoryScreen extends ConsumerWidget {
   final String? subjectUid;
 
   const ScreeningHistoryScreen({
-    Key? key,
+    super.key,
     this.childId,
     this.subjectUid,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

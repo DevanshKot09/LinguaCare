@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,10 +12,10 @@ class ScreeningReportScreen extends ConsumerWidget {
   final String? childId;
 
   const ScreeningReportScreen({
-    Key? key,
+    super.key,
     required this.instrumentId,
     this.childId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -158,7 +157,7 @@ class ScreeningReportScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: riskColor.withOpacity(0.1),
+            color: riskColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: riskColor, width: 1.5),
           ),
@@ -277,7 +276,7 @@ class ScreeningReportScreen extends ConsumerWidget {
           title: Text(l10n.findSpecialistComingSoon),
           enabled: false,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         ),
         const SizedBox(height: 8),
         ListTile(
@@ -285,7 +284,7 @@ class ScreeningReportScreen extends ConsumerWidget {
           title: Text(l10n.shareWithTeacherComingSoon),
           enabled: false,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         ),
 
         const SizedBox(height: 32),
@@ -375,7 +374,7 @@ class ScreeningReportScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: chipColor.withOpacity(0.15),
+                    color: chipColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: chipColor),
                   ),

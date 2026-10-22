@@ -99,7 +99,7 @@ class _ObservationsViewState extends ConsumerState<ObservationsView> {
                   const SizedBox(height: 16),
                   const Text('Setting', style: TextStyle(fontWeight: FontWeight.bold)),
                   DropdownButtonFormField<String>(
-                    value: _setting,
+                    initialValue: _setting,
                     decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: _settingsList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setStateDialog(() => _setting = v ?? 'Home'),

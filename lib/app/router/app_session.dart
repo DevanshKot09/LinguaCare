@@ -293,9 +293,9 @@ final appSessionProvider = Provider<AppSessionNotifier>((ref) {
 
 final appSessionStateProvider = Provider<AppSessionState>((ref) {
   final notifier = ref.watch(appSessionProvider);
-  final listener = () {
+  void listener() {
     ref.invalidateSelf();
-  };
+  }
   notifier.addListener(listener);
   ref.onDispose(() => notifier.removeListener(listener));
   return notifier.value;

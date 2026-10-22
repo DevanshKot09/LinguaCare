@@ -57,8 +57,7 @@ class ContentRepositoryImpl implements ContentRepository {
   final bool Function()? _isReleaseMode;
   List<ContentItem>? _cachedItems;
 
-  ContentRepositoryImpl(this._supabase, {bool Function()? isReleaseMode})
-      : _isReleaseMode = isReleaseMode;
+  ContentRepositoryImpl(this._supabase, {this._isReleaseMode});
 
   bool get _effectiveReleaseMode => _isReleaseMode != null ? _isReleaseMode() : kReleaseMode;
 

@@ -129,7 +129,7 @@ class _ActivityWrapUpScreenState extends ConsumerState<ActivityWrapUpScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _supportLevel,
+              initialValue: _supportLevel,
               decoration: const InputDecoration(border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'independent', child: Text('On their own / Independent')),

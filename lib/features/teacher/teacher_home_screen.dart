@@ -480,7 +480,7 @@ class _TeacherObservationsTabState extends ConsumerState<TeacherObservationsTab>
                   const SizedBox(height: 16),
                   const Text('Tag', style: TextStyle(fontWeight: FontWeight.bold)),
                   DropdownButtonFormField<String>(
-                    value: _selectedTag,
+                    initialValue: _selectedTag,
                     decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: _tagsList.map((t) => DropdownMenuItem(value: t, child: Text(t.toUpperCase()))).toList(),
                     onChanged: (v) => setStateDialog(() => _selectedTag = v ?? 'participation'),
@@ -488,7 +488,7 @@ class _TeacherObservationsTabState extends ConsumerState<TeacherObservationsTab>
                   const SizedBox(height: 16),
                   const Text('Setting', style: TextStyle(fontWeight: FontWeight.bold)),
                   DropdownButtonFormField<String>(
-                    value: _setting,
+                    initialValue: _setting,
                     decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: _settingsList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setStateDialog(() => _setting = v ?? 'Classroom'),
@@ -543,7 +543,7 @@ class _TeacherObservationsTabState extends ConsumerState<TeacherObservationsTab>
             const Text('Classroom Observations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedChildId,
+              initialValue: _selectedChildId,
               decoration: const InputDecoration(labelText: 'Select Student', border: OutlineInputBorder()),
               items: links.map((l) => DropdownMenuItem(value: l.childId, child: Text(l.childNickname))).toList(),
               onChanged: (v) => setState(() => _selectedChildId = v),

@@ -147,7 +147,7 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
           else ...[
             if (children.length > 1) ...[
               DropdownButtonFormField<String>(
-                value: _selectedChildId,
+                initialValue: _selectedChildId,
                 decoration: const InputDecoration(labelText: 'Active Child Profile', border: OutlineInputBorder()),
                 items: children.map((c) => DropdownMenuItem(value: c.id, child: Text('${c.nickname} (${c.band == AgeBand.band11_18 ? '11-18 yrs' : '5-11 yrs'})'))).toList(),
                 onChanged: (v) => setState(() => _selectedChildId = v),

@@ -127,16 +127,30 @@ class WelcomeScreen extends ConsumerWidget {
                       children: [
                         const Spacer(),
                         Container(
-                          width: 96,
-                          height: 96,
+                          width: 108,
+                          height: 108,
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(24),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                          child: Icon(
-                            Icons.chat_bubble_rounded,
-                            size: 48,
-                            color: theme.colorScheme.primary,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(28),
+                            child: Image.asset(
+                              'assets/images/logo_mascot.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Icon(
+                                Icons.chat_bubble_rounded,
+                                size: 54,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),

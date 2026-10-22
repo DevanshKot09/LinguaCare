@@ -23,7 +23,7 @@ class ResponsiveScaffold extends StatelessWidget {
   final Color? accentColor;
 
   const ResponsiveScaffold({
-    Key? key,
+    super.key,
     required this.title,
     required this.currentIndex,
     required this.onDestinationSelected,
@@ -31,7 +31,7 @@ class ResponsiveScaffold extends StatelessWidget {
     required this.body,
     this.actions,
     this.accentColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +72,7 @@ class ResponsiveScaffold extends StatelessWidget {
           selectedIndex: currentIndex,
           onDestinationSelected: onDestinationSelected,
           destinations: navDestinations,
-          indicatorColor: effectiveAccent.withOpacity(0.2),
+          indicatorColor: effectiveAccent.withValues(alpha: 0.2),
         ),
       );
     } else {
@@ -85,7 +85,7 @@ class ResponsiveScaffold extends StatelessWidget {
               labelType: NavigationRailLabelType.all,
               destinations: railDestinations,
               backgroundColor: theme.colorScheme.surface,
-              indicatorColor: effectiveAccent.withOpacity(0.2),
+              indicatorColor: effectiveAccent.withValues(alpha: 0.2),
             ),
             const VerticalDivider(thickness: 1, width: 1),
             Expanded(

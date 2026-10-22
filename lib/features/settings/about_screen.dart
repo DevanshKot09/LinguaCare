@@ -11,6 +11,17 @@ class AboutScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            Center(
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 100),
+                child: Image.asset(
+                  'assets/images/banner_horizontal.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             const Text('LinguaCare DLD Support App', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text('Version 1.0.0+1', style: TextStyle(color: Colors.grey, fontSize: 14)),

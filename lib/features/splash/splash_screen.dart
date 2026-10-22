@@ -8,7 +8,7 @@ import '../../app/router/app_session.dart';
 import '../../l10n/app_localizations.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
@@ -142,7 +142,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
     if (_maxTimeoutReached || session.status == AuthSessionStatus.error) {
       return Scaffold(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -202,16 +202,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 96,
-                  height: 96,
+                  width: 104,
+                  height: 104,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  child: Icon(
-                    Icons.chat_bubble_rounded,
-                    size: 48,
-                    color: theme.colorScheme.primary,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Image.asset(
+                      'assets/images/logo_mascot.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.chat_bubble_rounded,
+                        size: 48,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -229,7 +243,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
                   l10n.splashTagline,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ],

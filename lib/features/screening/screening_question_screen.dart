@@ -12,10 +12,10 @@ class ScreeningQuestionScreen extends ConsumerStatefulWidget {
   final String? childId;
 
   const ScreeningQuestionScreen({
-    Key? key,
+    super.key,
     required this.instrumentId,
     this.childId,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<ScreeningQuestionScreen> createState() => _ScreeningQuestionScreenState();
@@ -291,7 +291,7 @@ class _ScreeningQuestionScreenState extends ConsumerState<ScreeningQuestionScree
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         child: Row(

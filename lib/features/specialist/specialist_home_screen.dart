@@ -314,7 +314,7 @@ class _SpecialistPlansTabState extends ConsumerState<SpecialistPlansTab> {
                   ],
                   const Text('Domain', style: TextStyle(fontWeight: FontWeight.bold)),
                   DropdownButtonFormField<String>(
-                    value: _domain,
+                    initialValue: _domain,
                     decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: const [
                       DropdownMenuItem(value: 'vocabulary', child: Text('Vocabulary')),
@@ -383,7 +383,7 @@ class _SpecialistPlansTabState extends ConsumerState<SpecialistPlansTab> {
             const Text('Client Intervention Plans & Goals', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedChildId,
+              initialValue: _selectedChildId,
               decoration: const InputDecoration(labelText: 'Select Client', border: OutlineInputBorder()),
               items: links.map((l) => DropdownMenuItem(value: l.childId, child: Text(l.childNickname))).toList(),
               onChanged: (v) => setState(() => _selectedChildId = v),

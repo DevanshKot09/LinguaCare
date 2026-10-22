@@ -10,10 +10,10 @@ class ScreeningIntroScreen extends ConsumerWidget {
   final String? childId;
 
   const ScreeningIntroScreen({
-    Key? key,
+    super.key,
     required this.instrumentId,
     this.childId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -55,7 +55,7 @@ class _GoalsViewState extends ConsumerState<GoalsView> {
                 children: [
                   const Text('Domain', style: TextStyle(fontWeight: FontWeight.bold)),
                   DropdownButtonFormField<String>(
-                    value: _domain,
+                    initialValue: _domain,
                     decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: const [
                       DropdownMenuItem(value: 'vocabulary', child: Text('Vocabulary')),
