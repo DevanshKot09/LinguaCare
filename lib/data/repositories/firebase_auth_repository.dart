@@ -138,7 +138,9 @@ class FirebaseAuthRepository implements AuthRepository {
     try {
       if (!_googleInitialized) {
         try {
-          await _googleSignIn.initialize();
+          await _googleSignIn.initialize(
+            serverClientId: '683790739932-0kc2mktaa2ntf22luvjircutcumoc7sn.apps.googleusercontent.com',
+          );
         } catch (_) {}
         _googleInitialized = true;
       }

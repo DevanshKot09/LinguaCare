@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/router/app_session.dart';
 import '../../data/repositories/firebase_auth_repository.dart';
 import '../../domain/auth/auth_failure.dart';
 import '../../l10n/app_localizations.dart';
@@ -48,6 +49,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _passwordController.text.trim(),
       );
       if (!mounted) return;
+      try {
+        await ref.read(appSessionProvider).refreshSession();
+      } catch (_) {}
     } on AuthFailure catch (e) {
       setState(() {
         _errorMessage = e.message;
@@ -75,6 +79,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final authRepo = ref.read(authRepositoryProvider);
       await authRepo.signInWithGoogle();
       if (!mounted) return;
+      try {
+        await ref.read(appSessionProvider).refreshSession();
+      } catch (_) {}
     } on AuthFailure catch (e) {
       setState(() {
         _errorMessage = e.message;
