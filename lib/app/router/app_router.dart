@@ -23,6 +23,7 @@ import '../../features/screening/screening_question_screen.dart';
 import '../../features/screening/screening_report_screen.dart';
 import '../../features/screening/screening_history_screen.dart';
 import '../../features/tools/tools_hub_screen.dart';
+import '../../features/export/export_summary_screen.dart';
 import 'app_session.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -130,6 +131,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ScreeningHistoryScreen(childId: childId, subjectUid: subjectUid);
         },
       ),
+      GoRoute(path: '/export', builder: (context, state) => const ExportSummaryScreen()),
     ],
   );
 });

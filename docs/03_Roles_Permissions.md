@@ -68,3 +68,13 @@
 | Give research consent | – | ✔ | ✔ (child) | – | – |
 | Approve content / verify specialist | – | – | – | – | ✔ |
 | Run de-identified research export | – | – | – | – | ✔ (with ethics approval) |
+
+## PDF Summary Export Rules & Content per Role (Phase 6A)
+- **Header:** "LinguaCare shared summary", generation date, nickname and age band ONLY (never date of birth), role label (no name), page numbers.
+- **Mandatory Notice:** "This is a screening and practice summary. It is not a diagnosis." (on page 1 and in footer).
+- **Prototype Label:** Visible "Prototype - not clinically validated" label if any included instrument is unpublished.
+- **Parent & Adult:** Screening results, practice summary, goals; non-private observations only if "Include notes" toggle is ON.
+- **Specialist:** Screening results, practice summary, goals; non-private observations only if scope = `progress_notes` AND toggle is ON.
+- **Teacher:** Practice summary, goals, and teacher's OWN observations only if scope = `progress_notes` AND toggle is ON; NO screening results.
+- **Never Included:** Date of birth, home languages, interests, concerns, emails, UIDs, private observations, other people's names, free text beyond observation notes.
+

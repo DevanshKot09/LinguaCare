@@ -13,6 +13,7 @@ import '../tools/adult_journal_screen.dart';
 import '../tools/communication_card_screen.dart';
 import '../settings/about_screen.dart';
 import '../settings/privacy_policy_screen.dart';
+import '../export/export_action_widget.dart';
 
 class AdultHomeScreen extends ConsumerStatefulWidget {
   const AdultHomeScreen({super.key});
@@ -90,6 +91,25 @@ class _AdultHomeScreenState extends ConsumerState<AdultHomeScreen> {
             subtitle: const Text('Plain-language summary'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen())),
+          ),
+          ListTile(
+            title: const Text('Export Summary PDF'),
+            subtitle: const Text('Export personal screening & practice summary'),
+            trailing: const Icon(Icons.picture_as_pdf_rounded),
+            onTap: () {
+              showExportSummaryDialog(
+                context: context,
+                role: 'adult',
+                scope: 'progress_notes',
+                subjectNickname: profile?.fullName ?? 'Adult User',
+                subjectAgeBand: 'Adult (18+)',
+                isAccessEnded: false,
+                screeningSessions: const [],
+                practiceItems: const [],
+                goalItems: const [],
+                rawObservations: const [],
+              );
+            },
           ),
         ],
       );

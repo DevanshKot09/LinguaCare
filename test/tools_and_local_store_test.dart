@@ -154,6 +154,29 @@ void main() {
       expect(res, isEmpty);
     });
 
+    test('Local store keys are namespaced per user', () async {
+      final store1 = LocalStore('userA');
+      final store2 = LocalStore('userB');
+      await store1.writeJson('profile_prefs', {'theme': 'dark'});
+      await store2.writeJson('profile_prefs', {'theme': 'light'});
+
+      final resA = await store1.readJson('profile_prefs', {});
+      final resB = await store2.readJson('profile_prefs', {});
+
+      expect(resA['theme'], 'dark');
+      expect(resB['theme'], 'light');
+    });
+
+    test('Switching user does not expose the other user\'s local data', () async {
+      final storeA = LocalStore('userA');
+      final storeB = LocalStore('userB');
+      await storeA.writeJson('secret_key', {'data': 'userA_secret'});
+
+      // User B reads the same key name
+      final resB = await storeB.readJson('secret_key', {'data': 'default'});
+      expect(resB['data'], 'default');
+    });
+
     testWidgets('Layouts at 360dp and 900dp for tools and journal', (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1.0;

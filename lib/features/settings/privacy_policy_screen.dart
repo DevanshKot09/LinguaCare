@@ -82,11 +82,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _PrivacySection(
-              title: '3. Data Stored Exclusively On-Device',
+              title: '3. Data Stored Exclusively On-Device & Cloud Backup Policy',
               icon: Icons.phone_android_rounded,
               color: Colors.teal,
               points: const [
                 'Visual Schedules, Communication Cards, Adult Journal entries, and personal practice notes are stored 100% locally on your device.',
+                'Per our privacy commitment (android:allowBackup="false"), local app data is excluded from Google Cloud Auto Backup to guarantee complete privacy.',
                 'These personal tools never upload to cloud databases and can be cleared instantly via Settings > Clear Data on this Device.',
               ],
             ),

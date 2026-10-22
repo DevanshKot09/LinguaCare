@@ -74,3 +74,9 @@ Always provide the environment configuration file via `--dart-define-from-file` 
 
 If `SUPABASE_URL` or `SUPABASE_ANON_KEY` are missing or invalid, the app automatically presents the `ConfigErrorScreen` with clear diagnostics.
 
+---
+
+## 6. Android Auto Backup Trade-Off (`android:allowBackup="false"`)
+To comply with strict data privacy principles (DPDP Act 2023) and protect sensitive local user data (such as adult journal entries, visual schedules, communication cards, and local notes stored in SharedPreferences), `android:allowBackup` is explicitly set to `false` in `AndroidManifest.xml`.
+- **Trade-Off:** Local-only tool and journal data are excluded from Google Cloud Auto Backup. If a user uninstalls the app or switches devices without exporting or cloud syncing, local-only data stored in SharedPreferences will not be automatically restored.
+

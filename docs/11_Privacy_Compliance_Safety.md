@@ -43,3 +43,10 @@ Separate opt-in, plain-language consent + child assent, diverse recruitment, fai
 - **Regulatory check:** features that output diagnostic claims may count as medical-device software. Keep language as "screening/decision support" until legally cleared.
 - Publish a plain-language "How we use your data" page and model cards.
 - Incident response plan and breach notification process.
+
+## 7. Local Data Privacy & Cloud Backup Decision (Phase 6A)
+- **Local Store Namespacing:** `LocalStore` strictly namespaces keys by signed-in user id (`linguacare_${userId}_$key`), ensuring no data cross-contamination between users.
+- **Zero Email Storage in Local Store:** Local tool data (schedules, journal entries, communication cards) never stores user emails or UIDs.
+- **Account Deletion:** Account deletion explicitly calls `clearAllForUser()`, wiping all local device data for that user.
+- **Android Auto Backup Disabled (`android:allowBackup="false"`):** To ensure complete user privacy and DPDP Act compliance, local app data is excluded from Google Cloud Auto Backup. Trade-off: if a user uninstalls or switches devices without exporting, local-only tool data stored in SharedPreferences is not automatically restored.
+

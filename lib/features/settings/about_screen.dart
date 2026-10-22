@@ -32,7 +32,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'LinguaCare supports language development for individuals with Developmental Language Disorder (DLD). It provides daily activities, language checks, visual schedules, communication cards, instruction helpers, and collaboration tools between parents, teachers, and specialists.',
+              'LinguaCare supports language development for individuals with Developmental Language Disorder (DLD). It provides daily activities, language checks, visual schedules, communication cards, instruction helpers, collaboration tools, and local-first privacy (with cloud backup disabled via allowBackup="false" to keep personal journal and tool data strictly on your device).',
             ),
             const SizedBox(height: 24),
             const Text(

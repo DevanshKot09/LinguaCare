@@ -41,3 +41,4 @@
 | **Activity Wrap-Up Semantics & Rating** | Yes (`activity_widget_test.dart`) | Yes (`activity_sessions` table) | Pending physical device QA | Battery drain profiling during long sessions |
 | **Database Security & RLS Policies** | Yes (`phase6_rls_checks.sql`) | Yes (Supabase RLS migrations) | N/A | Edge case concurrency in multi-tenant inserts |
 | **Release Build Safety & R8 Minify** | Yes (ProGuard rules verified) | N/A | Pending physical device release APK | Play Store upload pipeline integration |
+| **PDF Summary Export & Local Privacy** | Yes (`pdf_export_test.dart`, `tools_and_local_store_test.dart`) | Yes (Shared summary RPC & RLS) | Pending physical device QA | Cloud auto backup of local SharedPreferences (intentionally disabled via `android:allowBackup="false"`) |

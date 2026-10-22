@@ -13,6 +13,7 @@ import '../sharing/sharing_management_view.dart';
 import '../tools/tools_hub_screen.dart';
 import '../tools/communication_card_screen.dart';
 import '../tools/visual_schedule_screen.dart';
+import '../export/export_action_widget.dart';
 
 class ParentHomeScreen extends ConsumerStatefulWidget {
   const ParentHomeScreen({super.key});
@@ -97,6 +98,25 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VisualScheduleScreen())),
                       icon: const Icon(Icons.calendar_today_rounded),
                       label: const Text('Visual schedule'),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        showExportSummaryDialog(
+                          context: context,
+                          role: 'parent',
+                          scope: 'progress_notes',
+                          subjectNickname: selectedChild.nickname,
+                          subjectAgeBand: is11to18 ? '11-18 yrs' : '5-11 yrs',
+                          isAccessEnded: false,
+                          screeningSessions: const [],
+                          practiceItems: const [],
+                          goalItems: const [],
+                          rawObservations: const [],
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_rounded),
+                      label: Text('Export summary for ${selectedChild.nickname}'),
                     ),
                   ],
                 ),
