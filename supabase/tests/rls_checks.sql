@@ -97,7 +97,32 @@ DECLARE
     'Consents delete allowed for owner',
     'Profile role modification to admin rejected',
     'Adult user under 18 rejected',
-    'Admin role assignment from client rejected'
+    'Admin role assignment from client rejected',
+    'User B cannot SELECT A screening session',
+    'User B cannot DELETE A screening session',
+    'User B cannot INSERT screening session for A child',
+    'User B cannot SELECT A activity session',
+    'User B cannot DELETE A activity session',
+    'User B cannot INSERT activity session for A child',
+    'Screening both subject set rejected',
+    'Screening neither subject set rejected',
+    'Activity both subject set rejected',
+    'Activity neither subject set rejected',
+    'respondent_uid spoofing rejected',
+    'actor_uid spoofing rejected',
+    'Parent can add child via add_child',
+    'Parent direct INSERT into children rejected',
+    'Cascade delete child removes screening sessions',
+    'Cascade delete child removes activity sessions',
+    'Consents of another user not readable',
+    'Owner cannot UPDATE own profile verified',
+    'Owner cannot UPDATE own profile email',
+    'Owner cannot UPDATE own profile uid',
+    'Non-admin cannot INSERT content_items',
+    'Non-admin cannot UPDATE content_items',
+    'Non-admin cannot DELETE content_items',
+    'anon cannot SELECT any app table',
+    'anon cannot EXECUTE accept_invite'
   ];
   v_req_name text;
   v_missing_count int := 0;

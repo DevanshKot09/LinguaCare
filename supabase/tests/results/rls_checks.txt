@@ -1,0 +1,3 @@
+﻿Get-Clipboard | Set-Content -Encoding UTF8 supabase\tests\results\rls_checks.txt
+Get-Clipboard | Set-Content -Encoding UTF8 supabase\tests\results\rls_checks_links.txt
+Get-Clipboard | Set-Content -Encoding UTF8 supabase\tests\results\rls_checks_obs_goals.txt

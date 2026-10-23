@@ -1,0 +1,73 @@
+[rls_checks]
+POSITIVE CONTROL - User A can read own profile
+POSITIVE CONTROL - User A can read own child
+User B cannot read User A child
+User A cannot insert profile for another user
+Screening session insert valid
+Screening sessions update denied
+Consents insert valid
+Consents update valid
+Complete profile enforces email verification
+Complete profile blocks duplicate profile
+Profile role modification rejected
+Profile full_name update allowed for owner
+Screening sessions read by respondent owner
+Teacher add child blocked
+Child age under 5 rejected
+Child age over 17 rejected
+Published content readable by authenticated user
+Draft content invisible to authenticated user
+Activity sessions insert valid
+Activity sessions update denied
+Children update allowed for nickname
+Children dob update within range allowed
+Children update of dob out of range rejected
+Children update of parent_uid rejected
+Screening sessions delete allowed for parent owner
+Activity sessions delete allowed for parent owner
+Consents delete allowed for owner
+Profile role modification to admin rejected
+Adult user under 18 rejected
+Admin role assignment from client rejected
+
+[rls_checks_links]
+POSITIVE CONTROL - Parent can read own children
+Create invite valid (named args)
+Plaintext invite code not stored
+Preview invite valid
+Accept invite valid
+Invite single-use enforced
+Shared summary works and is redacted
+Member cannot SELECT children directly
+Revoke blocks reads
+list_my_links works for owner
+list_access_log returns entries for owner
+Adult self-share rules and acceptance work
+Teen share without assent blocked
+Teen invite with teen assent success
+Parent B cannot see Parent A links
+Unverified specialist accept blocked
+Owner cannot accept own invite
+
+[rls_checks_obs_goals]
+POSITIVE CONTROL - Parent can read own profile and child
+Verified specialist can insert observation with server-side author derivation
+Verified specialist can insert goal
+Parent can insert observation on own child
+Teacher cannot create goals
+Observation note > 500 chars rejected for right reason
+Observation PII phone rejected
+Observation > 8 tags rejected
+Goal description > 300 chars rejected
+Goal progress > 100 rejected
+Non-author update of observation rejected
+Author update of observation allowed
+Parent delete observation allowed
+Parent update goal progress/status allowed
+Private observation invisible in shared summary
+Scope progress link cannot read observations
+Scope progress link can read goals
+Unlinked specialist cannot read observations directly
+Parent other cannot read other child non-private observations
+Goal delete allowed for parent owner
+Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles

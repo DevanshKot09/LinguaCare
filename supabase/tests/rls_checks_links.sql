@@ -109,7 +109,24 @@ DECLARE
     'Teen invite with teen assent success',
     'Parent B cannot see Parent A links',
     'Unverified specialist accept blocked',
-    'Owner cannot accept own invite'
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
   ];
   v_req_name text;
   v_missing_count int := 0;

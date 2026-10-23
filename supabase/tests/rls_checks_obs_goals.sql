@@ -90,7 +90,29 @@ DECLARE
     'Unlinked specialist cannot read observations directly',
     'Parent other cannot read other child non-private observations',
     'Goal delete allowed for parent owner',
-    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles'
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
   ];
   v_req_name text;
   v_missing_count int := 0;

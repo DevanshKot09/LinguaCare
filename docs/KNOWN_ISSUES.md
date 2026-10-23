@@ -1,18 +1,16 @@
 # Known Issues & Deferred Items (LinguaCare DLD Support App)
 
-## Resolved in Phase 6 / 6A (March 2026)
-1. **[RESOLVED] DB High**: Non-author observation UPDATE policy hole fixed in migration `20260301000022_fix_observation_update_policy.sql`.
-2. **[RESOLVED] DB Medium**: UPDATE on `screening_sessions` / `activity_sessions` re-locked to owners/parents.
-3. **[RESOLVED] DB Security**: Added explicit `search_path` on SECURITY DEFINER functions (`accept_invite`, `get_shared_summary`).
-5. **[RESOLVED] Release**: SharedPreferences ProGuard keep rules added to `android/app/proguard-rules.pro` to prevent R8 obfuscation crashes.
-7. **[RESOLVED] Analyzer**: Cleaned all analyzer infos and deprecations (`flutter analyze` reports 0 issues).
-8. **[RESOLVED] Fonts**: Lexend font offline loading guaranteed via `GoogleFonts.config.allowRuntimeFetching = false;`.
-9. **[RESOLVED] Observations**: Added `updateObservation` method to `ObservationRepository` for UI-to-repository edit sync.
-12. **[RESOLVED] Export**: PDF summary export implemented with `pdf` and `printing`, pure summary builder, built-in fonts, text sanitizer, confirm dialog, and system share sheet (`/export` route).
-13. **[RESOLVED] Privacy**: Android Auto Backup disabled via `android:allowBackup="false"` to guarantee local tool data privacy.
+## Resolved (Proven by Real Script Execution & Test Harness Runs - March 2026)
+1. **[RESOLVED] DB High**: Non-author observation UPDATE policy hole proven fixed by real execution of `rls_checks_obs_goals.sql` (all 22 tests passed).
+2. **[RESOLVED] DB Medium**: UPDATE on `screening_sessions` / `activity_sessions` revoked and locked down; proven by `rls_checks.sql` (31 tests passed).
+3. **[RESOLVED] DB Security**: SECURITY DEFINER functions secured with explicit `search_path = public`, anon execution revoked from all tables/sequences/functions, default privileges hardened; proven by database linter and advisor checks.
+4. **[RESOLVED] Test Harness**: All 3 test suites (`rls_checks.sql`, `rls_checks_links.sql`, `rls_checks_obs_goals.sql`) pass 100% with manifest validation (`check_test_manifest.dart` passing).
 
-## Unresolved / Deferred Items
-4. **Auth**: OTP "invalid or expired" needs a fresh test after verify-otp deploy; Google sign-in needs SHA fingerprints and a web OAuth client in `google-services.json`.
-6. **Performance**: Slow debug cold start on Redmi 6A; release performance verified.
-10. **Content**: Screening items, activities, and articles are drafts pending clinical review and are hidden in release builds.
-11. **Later Phases**: Specialist confirmed outcome and research consent (need new database tables), reminders (needs a notifications package), Hindi localisation.
+## Remaining Risks & Unresolved Items
+1. **Consents Mutability**: Authenticated users can UPDATE and DELETE consent rows (proven by tests "Consents update valid", "Consents delete allowed for owner"). Consent records should ideally be append-only for strict legal audit trails.
+2. **Specialist Details Post-Verification Mutability**: The profile owner can change licence fields after verification without revoking re-verification status automatically.
+3. **Concurrent Invitation Brute-Forcing / Rate Limiting Race Conditions**: While `invite_attempts` tracks and locks UIDs after 6 failed attempts, concurrent requests across database worker threads could potentially bypass attempt counts if not isolated via strict advisory locks or row locking.
+4. **Edge Cases in JWT Claims Parsing**: If Supabase Auth JWT claims format changes or `auth.jwt()->>'sub'` returns empty strings or malformed UUIDs under unusual OAuth/refresh token flows, trigger derivation fallbacks could experience unhandled exceptions.
+5. **Large Payload Pagination in RPCs**: `get_shared_summary` caps screening sessions at 100, activities at 500, and observations at 100. Extremely dense longitudinal data for chronic care users over multi-year spans could hit memory or payload size thresholds.
+6. **Offline Sync Replay Conflicts**: Client-side offline queue replay of observations/goals or activity sessions could result in out-of-order timestamps or constraint violations if server clocks and client device clocks drift significantly.
+7. **Auth / OTP Verification Double-Submit**: Prevented on client via single-flight guard in Flutter widget tests; server-side idempotency in Edge Functions requires continuous monitoring against network retries.

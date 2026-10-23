@@ -49,5 +49,5 @@ CREATE POLICY "Activity sessions update policy" ON activity_sessions
   );
 
 -- 3. Set search_path on security definer functions (example for core functions if any lack search_path)
-ALTER FUNCTION IF EXISTS accept_invite(text) SET search_path = public, pg_temp;
-ALTER FUNCTION IF EXISTS get_shared_summary(uuid) SET search_path = public, pg_temp;
+ALTER FUNCTION accept_invite(text) SET search_path = public;
+ALTER FUNCTION get_shared_summary(uuid) SET search_path = public;

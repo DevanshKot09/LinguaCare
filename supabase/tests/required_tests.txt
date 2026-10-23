@@ -1,73 +1,69 @@
-[rls_checks.sql]
-POSITIVE CONTROL - User A can read own profile
-POSITIVE CONTROL - User A can read own child
-User B cannot read User A child
-User A cannot insert profile for another user
-Screening session insert valid
-Screening sessions update denied
-Consents insert valid
-Consents update valid
-Complete profile enforces email verification
-Complete profile blocks duplicate profile
-Profile role modification rejected
-Profile full_name update allowed for owner
-Screening sessions read by respondent owner
-Teacher add child blocked
-Child age under 5 rejected
-Child age over 17 rejected
-Published content readable by authenticated user
-Draft content invisible to authenticated user
-Activity sessions insert valid
-Activity sessions update denied
-Children update allowed for nickname
-Children dob update within range allowed
-Children update of dob out of range rejected
-Children update of parent_uid rejected
-Screening sessions delete allowed for parent owner
-Activity sessions delete allowed for parent owner
-Consents delete allowed for owner
-Profile role modification to admin rejected
-Adult user under 18 rejected
-Admin role assignment from client rejected
+[rls_checks]
+User B cannot SELECT A screening session
+User B cannot DELETE A screening session
+User B cannot INSERT screening session for A child
+User B cannot SELECT A activity session
+User B cannot DELETE A activity session
+User B cannot INSERT activity session for A child
+Screening both subject set rejected
+Screening neither subject set rejected
+Activity both subject set rejected
+Activity neither subject set rejected
+respondent_uid spoofing rejected
+actor_uid spoofing rejected
+Parent can add child via add_child
+Parent direct INSERT into children rejected
+Cascade delete child removes screening sessions
+Cascade delete child removes activity sessions
+Consents of another user not readable
+Owner cannot UPDATE own profile verified
+Owner cannot UPDATE own profile email
+Owner cannot UPDATE own profile uid
+Non-admin cannot INSERT content_items
+Non-admin cannot UPDATE content_items
+Non-admin cannot DELETE content_items
+anon cannot SELECT any app table
+anon cannot EXECUTE accept_invite
 
-[rls_checks_links.sql]
-POSITIVE CONTROL - Parent can read own children
-Create invite valid (named args)
-Plaintext invite code not stored
-Preview invite valid
-Accept invite valid
-Invite single-use enforced
-Shared summary works and is redacted
-Member cannot SELECT children directly
-Revoke blocks reads
-list_my_links works for owner
-list_access_log returns entries for owner
-Adult self-share rules and acceptance work
-Teen share without assent blocked
-Teen invite with teen assent success
-Parent B cannot see Parent A links
-Unverified specialist accept blocked
-Owner cannot accept own invite
+[rls_checks_links]
+Teacher cannot create invite
+Non-parent cannot create child invite
+Wrong-role accept fails
+Expired invite fails
+Lockout after repeated failed attempts
+Parent B cannot see A invites
+Expired link blocks summary read
+Member cannot SELECT screening_sessions directly
+Member cannot SELECT activity_sessions directly
+Member cannot SELECT observations directly
+Member cannot SELECT goals directly
+Summary JSON has no dob/home_languages/interests/concerns keys
+access_audit row created by get_shared_summary
+access_audit de-duplicated within an hour
+access_audit has no health content
+Revoke by member works
+list_access_log denied for non-owner
 
-[rls_checks_obs_goals.sql]
-POSITIVE CONTROL - Parent can read own profile and child
-Verified specialist can insert observation with server-side author derivation
-Verified specialist can insert goal
-Parent can insert observation on own child
-Teacher cannot create goals
-Observation note > 500 chars rejected for right reason
-Observation PII phone rejected
-Observation > 8 tags rejected
-Goal description > 300 chars rejected
-Goal progress > 100 rejected
-Non-author update of observation rejected
-Author update of observation allowed
-Parent delete observation allowed
-Parent update goal progress/status allowed
-Private observation invisible in shared summary
-Scope progress link cannot read observations
-Scope progress link can read goals
-Unlinked specialist cannot read observations directly
-Parent other cannot read other child non-private observations
-Goal delete allowed for parent owner
-Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles
+[rls_checks_obs_goals]
+Private observation invisible to parent
+Private observation invisible to members
+Private observation visible to its author
+Non-author cannot UPDATE observation
+Scope progress rejects observation write
+Unverified specialist rejected
+Teacher with progress_notes link can read goals via summary
+Revoked link blocks write
+Expired link blocks write
+Revoked link blocks read
+Expired link blocks read
+Member cannot SELECT observations directly
+Member cannot SELECT goals directly
+Parent cannot read other family observations
+Parent cannot read other family goals
+Email in note rejected
+Invalid goal domain rejected
+Summary includes observations/goals only with progress_notes
+Summary never includes private observations
+Parent can DELETE non-private observation
+Parent cannot UPDATE another authors observation
+Anti-spoofing goal
