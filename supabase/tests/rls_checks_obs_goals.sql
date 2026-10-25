@@ -115,6 +115,3967 @@ DECLARE
     'Anti-spoofing goal'
   ];
   v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Private observation invisible to members
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Private observation visible to its author
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Non-author cannot UPDATE observation
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Scope progress rejects observation write
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Unverified specialist rejected
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Teacher with progress_notes link can read goals via summary
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Revoked link blocks write
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Expired link blocks write
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Revoked link blocks read
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Expired link blocks read
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Member cannot SELECT observations directly
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Member cannot SELECT goals directly
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Parent cannot read other family observations
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Parent cannot read other family goals
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Email in note rejected
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Invalid goal domain rejected
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Summary includes observations/goals only with progress_notes
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Summary never includes private observations
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Parent can DELETE non-private observation
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Parent cannot UPDATE another authors observation
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Anti-spoofing goal
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Private observation invisible to parent
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own profile and child',
+    'Verified specialist can insert observation with server-side author derivation',
+    'Verified specialist can insert goal',
+    'Parent can insert observation on own child',
+    'Teacher cannot create goals',
+    'Observation note > 500 chars rejected for right reason',
+    'Observation PII phone rejected',
+    'Observation > 8 tags rejected',
+    'Goal description > 300 chars rejected',
+    'Goal progress > 100 rejected',
+    'Non-author update of observation rejected',
+    'Author update of observation allowed',
+    'Parent delete observation allowed',
+    'Parent update goal progress/status allowed',
+    'Private observation invisible in shared summary',
+    'Scope progress link cannot read observations',
+    'Scope progress link can read goals',
+    'Unlinked specialist cannot read observations directly',
+    'Parent other cannot read other child non-private observations',
+    'Goal delete allowed for parent owner',
+    'Anti-spoofing - client author_uid/author_role overridden by verified JWT sub and profiles',
+    'Private observation invisible to parent',
+    'Private observation invisible to members',
+    'Private observation visible to its author',
+    'Non-author cannot UPDATE observation',
+    'Scope progress rejects observation write',
+    'Unverified specialist rejected',
+    'Teacher with progress_notes link can read goals via summary',
+    'Revoked link blocks write',
+    'Expired link blocks write',
+    'Revoked link blocks read',
+    'Expired link blocks read',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Parent cannot read other family observations',
+    'Parent cannot read other family goals',
+    'Email in note rejected',
+    'Invalid goal domain rejected',
+    'Summary includes observations/goals only with progress_notes',
+    'Summary never includes private observations',
+    'Parent can DELETE non-private observation',
+    'Parent cannot UPDATE another authors observation',
+    'Anti-spoofing goal'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM observations WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM goals WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_p_obs', 'p@test.com', now()),
+    ('test_p_other', 'pother@test.com', now()),
+    ('test_t_obs', 't@test.com', now()),
+    ('test_spec_v', 'sv@test.com', now()),
+    ('test_spec_uv', 'suv@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_p_obs', 'parent'::user_role, 'Parent Obs', 'p@test.com', true, 'IN', 'en', false),
+    ('test_p_other', 'parent'::user_role, 'Parent Other', 'pother@test.com', true, 'IN', 'en', false),
+    ('test_t_obs', 'teacher'::user_role, 'Teacher Obs', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_v', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_spec_uv', 'specialist'::user_role, 'Spec Unverified', 'suv@test.com', true, 'IN', 'en', false);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob) VALUES
+    (v_child_obs, 'test_p_obs', 'Kid Obs', '2018-01-01'),
+    (v_child_other, 'test_p_other', 'Kid Other', '2018-01-01');
+
+  -- Create active link with progress_notes scope for verified specialist
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_notes, v_child_obs, null, 'test_p_obs', 'test_spec_v', 'specialist'::user_role, 'progress_notes', 'active');
+
+  -- Create active link with progress scope (no observations allowed)
+  INSERT INTO links (id, child_id, subject_uid, owner_uid, member_uid, member_role, scope, status)
+  VALUES (v_link_prog, v_child_obs, null, 'test_p_obs', 'test_t_obs', 'teacher'::user_role, 'progress', 'active');
+
+  -- D. Fixture Observations and Goals required for non-vacuous negative testing
+  INSERT INTO observations (child_id, author_uid, author_role, note, tags, setting, private) VALUES
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'Parent non-private observation.', ARRAY['speech'], 'Home', false),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist private observation.', ARRAY['speech'], 'Clinic', true),
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'Specialist non-private observation.', ARRAY['speech'], 'Clinic', false);
+
+  INSERT INTO goals (child_id, author_uid, author_role, domain, description, target_date, status, progress) VALUES
+    (v_child_obs, 'test_spec_v', 'specialist'::user_role, 'vocabulary', 'Specialist goal description.', current_date + interval '30 days', 'active', 20),
+    (v_child_obs, 'test_p_obs', 'parent'::user_role, 'grammar', 'Parent goal description.', current_date + interval '30 days', 'active', 40);
+
+  SELECT id INTO v_obs_id FROM observations WHERE child_id = v_child_obs AND private = true LIMIT 1;
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (20 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and child
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_p_obs","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_p_obs';
+    if v_count = 1 then
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own profile and child';
+    else
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own profile and child :: Count mismatch';
+    end if;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own profile and child :: %s', SQLERRM);
+  END;
+
   v_missing_count int := 0;
   v_logged_count int := 0;
   v_total_real int := 0;

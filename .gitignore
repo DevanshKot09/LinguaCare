@@ -71,3 +71,5 @@ ios/Runner/GoogleService-Info.plist
 !ios/Runner/GoogleService-Info.example.plist
 lib/firebase_options.dart
 !lib/firebase_options.example.dart
+
+docs/screenshots/

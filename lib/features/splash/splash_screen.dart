@@ -98,6 +98,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
         UserRole.teacher => '/teacher',
         UserRole.adult => '/adult',
         UserRole.specialist => '/specialist',
+        UserRole.admin => '/admin',
         null => '/welcome',
       };
       context.go(route);

@@ -104,23 +104,27 @@ class _ActivityWrapUpScreenState extends ConsumerState<ActivityWrapUpScreen> {
             const SizedBox(height: 12),
 
             // Success rating 1-5 with words
-            ..._successLabels.entries.map((entry) {
-              final val = entry.key;
-              final label = entry.value;
-              final isSelected = _successLevel == val;
+            RadioGroup<int>(
+              groupValue: _successLevel,
+              onChanged: (v) => setState(() => _successLevel = v),
+              child: Column(
+                children: _successLabels.entries.map((entry) {
+                  final val = entry.key;
+                  final label = entry.value;
+                  final isSelected = _successLevel == val;
 
-              return Semantics(
-                selected: isSelected,
-                child: RadioListTile<int>(
-                  title: Text(label),
-                  subtitle: Text('Rating $val / 5'),
-                  value: val,
-                  groupValue: _successLevel,
-                  tileColor: isSelected ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2) : null,
-                  onChanged: (v) => setState(() => _successLevel = v),
-                ),
-              );
-            }),
+                  return Semantics(
+                    selected: isSelected,
+                    child: RadioListTile<int>(
+                      title: Text(label),
+                      subtitle: Text('Rating $val / 5'),
+                      value: val,
+                      tileColor: isSelected ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2) : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
 
             const Divider(height: 32),
             const Text(

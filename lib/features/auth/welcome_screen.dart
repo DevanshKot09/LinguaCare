@@ -100,6 +100,25 @@ class WelcomeScreen extends ConsumerWidget {
                   context.go('/specialist');
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.shield_rounded, color: Color(0xFF6366F1)),
+                title: const Text('Admin Console (admin@lingua.ai)'),
+                onTap: () {
+                  ref.read(appSessionProvider).debugSetState(
+                        status: AuthSessionStatus.authenticated,
+                        user: const AuthUser(
+                          uid: 'admin-uid',
+                          email: 'admin@lingua.ai',
+                          emailVerified: true,
+                          profileExists: true,
+                          role: UserRole.admin,
+                        ),
+                        onboardingDone: true,
+                      );
+                  Navigator.pop(context);
+                  context.go('/admin');
+                },
+              ),
             ],
           ),
         );
@@ -196,7 +215,7 @@ class WelcomeScreen extends ConsumerWidget {
                           onPressed: () => context.go('/login'),
                           child: Text(l10n.logIn),
                         ),
-                        if (kDebugMode && !(ref.watch(appSessionStateProvider).user?.profileExists ?? false)) ...[
+                        if (kDebugMode) ...[
                           const SizedBox(height: 12),
                           TextButton.icon(
                             onPressed: () => _showDebugSwitcher(context, ref),

@@ -1,0 +1,12 @@
+[rls_checks_phase_b]
+POSITIVE CONTROL - Owner can read own consent history
+Consent rows cannot be UPDATED by owner
+Consent rows cannot be DELETED by owner
+Consent withdrawal appends a new row
+Latest consent row decides current status
+Another user cannot withdraw my consent
+Specialist licence change resets verified
+Specialist non-licence update keeps verified
+Owner role can still set verified for admin approval
+generate_invite_code not executable by authenticated
+preview_invite and accept_invite take an advisory lock

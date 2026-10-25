@@ -61,8 +61,11 @@ class _ArticleReaderScreenState extends ConsumerState<ArticleReaderScreen> {
           ),
           body: MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(_textScaleFactor)),
-            child: ListView(
-              padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: ListView(
+                  padding: const EdgeInsets.all(24),
               children: [
                 if (item.status != ContentStatus.published)
                   Container(
@@ -134,7 +137,9 @@ class _ArticleReaderScreenState extends ConsumerState<ArticleReaderScreen> {
               ],
             ),
           ),
-        );
+        ),
+      ),
+    );
       },
       loading: () => Scaffold(appBar: AppBar(), body: const Center(child: CircularProgressIndicator())),
       error: (err, st) => Scaffold(appBar: AppBar(), body: Center(child: Text('Error: $err'))),

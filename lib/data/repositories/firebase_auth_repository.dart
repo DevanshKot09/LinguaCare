@@ -72,7 +72,7 @@ class FirebaseAuthRepository implements AuthRepository {
             'teacher' => UserRole.teacher,
             'adult' => UserRole.adult,
             'specialist' => UserRole.specialist,
-            'admin' => UserRole.specialist,
+            'admin' => UserRole.admin,
             _ => null,
           };
         }

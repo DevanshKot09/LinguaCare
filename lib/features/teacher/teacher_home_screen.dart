@@ -210,7 +210,41 @@ class TeacherDashboardTab extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Error loading dashboard: $e'),
+          error: (e, _) {
+            debugPrint('TeacherDashboardTab load error: $e');
+            return Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const Icon(Icons.school_outlined, size: 48, color: AppColors.teacherAccent),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No linked students yet.',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Ask a parent for an invite code to connect with your students.',
+                      style: TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AcceptInviteScreen()),
+                      ),
+                      icon: const Icon(Icons.qr_code_rounded),
+                      label: const Text('Add Student with Invite Code'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -594,7 +628,15 @@ class _TeacherObservationsTabState extends ConsumerState<TeacherObservationsTab>
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error loading observations: $e'),
+                    error: (e, _) {
+                      debugPrint('Error loading observations: $e');
+                      return const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text('Unable to load observations. Please check your connection and try again.'),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -603,7 +645,15 @@ class _TeacherObservationsTabState extends ConsumerState<TeacherObservationsTab>
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Error loading student links: $e'),
+      error: (e, _) {
+        debugPrint('Error loading student links: $e');
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Text('Unable to load student links. Please check your connection and try again.'),
+          ),
+        );
+      },
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/router/app_router.dart';
 import 'app/theme/app_theme.dart';
 import 'core/errors/config_error_screen.dart';
+import 'core/widgets/cookie_consent_banner.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 
@@ -72,6 +73,9 @@ class LinguaCareApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme(context),
       themeMode: ThemeMode.system,
       routerConfig: router,
+      builder: (context, child) => CookieConsentBanner(
+        child: child ?? const SizedBox.shrink(),
+      ),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

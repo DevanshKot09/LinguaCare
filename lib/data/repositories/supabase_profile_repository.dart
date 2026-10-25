@@ -37,7 +37,7 @@ class SupabaseProfileRepository implements ProfileRepository {
         'teacher' => UserRole.teacher,
         'adult' => UserRole.adult,
         'specialist' => UserRole.specialist,
-        'admin' => UserRole.specialist,
+        'admin' => UserRole.admin,
         _ => UserRole.parent,
       };
 
@@ -90,6 +90,7 @@ class SupabaseProfileRepository implements ProfileRepository {
         UserRole.teacher => 'teacher',
         UserRole.adult => 'adult',
         UserRole.specialist => 'specialist',
+        UserRole.admin => 'admin',
       };
 
       await _supabase.rpc('complete_profile', params: {

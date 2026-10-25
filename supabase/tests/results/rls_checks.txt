@@ -1,3 +1,57 @@
-﻿Get-Clipboard | Set-Content -Encoding UTF8 supabase\tests\results\rls_checks.txt
-Get-Clipboard | Set-Content -Encoding UTF8 supabase\tests\results\rls_checks_links.txt
-Get-Clipboard | Set-Content -Encoding UTF8 supabase\tests\results\rls_checks_obs_goals.txt
+HARNESS SELF-TEST: OK
+VACUOUS-RISK CHECK
+PASS: POSITIVE CONTROL - User A can read own profile
+PASS: POSITIVE CONTROL - User A can read own child
+PASS: User B cannot read User A child
+PASS: User A cannot insert profile for another user
+PASS: Screening session insert valid
+PASS: Screening sessions update denied
+PASS: Consents insert valid
+PASS: Consents update denied (append-only)
+PASS: Complete profile enforces email verification
+PASS: Complete profile blocks duplicate profile
+PASS: Profile role modification rejected
+PASS: Profile full_name update allowed for owner
+PASS: Screening sessions read by respondent owner
+PASS: Teacher add child blocked
+PASS: Child age under 5 rejected
+PASS: Child age over 17 rejected
+PASS: Published content readable by authenticated user
+PASS: Draft content invisible to authenticated user
+PASS: Activity sessions insert valid
+PASS: Activity sessions update denied
+PASS: Children update allowed for nickname
+PASS: Children dob update within range allowed
+PASS: Children update of dob out of range rejected
+PASS: Children update of parent_uid rejected
+PASS: Screening sessions delete allowed for parent owner
+PASS: Activity sessions delete allowed for parent owner
+PASS: Consents delete denied (append-only)
+PASS: Profile role modification to admin rejected
+PASS: Adult user under 18 rejected
+PASS: Admin role assignment from client rejected
+PASS: User B cannot SELECT A screening session
+PASS: User B cannot DELETE A screening session
+PASS: User B cannot INSERT screening session for A child
+PASS: User B cannot SELECT A activity session
+PASS: User B cannot DELETE A activity session
+PASS: User B cannot INSERT activity session for A child
+PASS: Screening both subject set rejected
+PASS: Screening neither subject set rejected
+PASS: Activity both subject set rejected
+PASS: Activity neither subject set rejected
+PASS: respondent_uid spoofing rejected
+PASS: actor_uid spoofing rejected
+PASS: Parent can add child via add_child
+PASS: Parent direct INSERT into children rejected
+PASS: Cascade delete child removes screening sessions
+PASS: Cascade delete child removes activity sessions
+PASS: Consents of another user not readable
+PASS: Owner cannot UPDATE own profile verified
+PASS: Owner cannot UPDATE own profile email
+PASS: Owner cannot UPDATE own profile uid
+PASS: Non-admin cannot INSERT content_items
+PASS: Non-admin cannot UPDATE content_items
+PASS: Non-admin cannot DELETE content_items
+PASS: anon cannot SELECT any app table
+PASS: anon cannot EXECUTE accept_invite

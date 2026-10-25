@@ -154,10 +154,12 @@ class _AdultHomeScreenState extends ConsumerState<AdultHomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => context.push('/screening/history?subjectUid=$userId'),
-                        icon: const Icon(Icons.history),
-                        label: const Text('History'),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/screening/history?subjectUid=$userId'),
+                          icon: const Icon(Icons.history),
+                          label: const Text('History'),
+                        ),
                       ),
                     ],
                   ),

@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_session.dart';
+import '../../app/theme/app_colors.dart';
 import '../../data/repositories/firebase_auth_repository.dart';
 import '../../data/repositories/supabase_profile_repository.dart';
 import '../../domain/auth/auth_failure.dart';
@@ -13,6 +15,7 @@ import 'about_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'faq_screen.dart';
+import 'research_consents_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -27,6 +30,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _onSignOut() async {
     final authRepo = ref.read(authRepositoryProvider);
+    if (kDebugMode) {
+      ref.read(appSessionProvider).debugSetState(
+        status: AuthSessionStatus.unauthenticated,
+        user: null,
+        onboardingDone: true,
+      );
+    }
     await authRepo.signOut();
     if (!mounted) return;
     context.go('/welcome');
@@ -133,95 +143,207 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             if (_errorMessage != null) ...[
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.errorLight.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.errorLight.withValues(alpha: 0.3)),
                 ),
-                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, color: AppColors.errorLight),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(_errorMessage!, style: const TextStyle(color: AppColors.errorLight)),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
             ],
-            const Text('Profile Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            ListTile(
-              title: const Text('Full Name'),
-              subtitle: Text(profile?.fullName ?? session.user?.email ?? 'N/A'),
+            // Profile Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppColors.primaryLight.withValues(alpha: 0.15),
+                          child: const Icon(Icons.person_rounded, color: AppColors.primaryLight),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                profile?.fullName ?? session.user?.email ?? 'Account',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              Text(
+                                profile?.email ?? session.user?.email ?? '',
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Text(
+                            profile?.role.name.toUpperCase() ?? 'GUEST',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryLight,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (profile?.country != null) ...[
+                      const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Country', style: TextStyle(color: Colors.grey)),
+                          Text(profile!.country!, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-            ListTile(
-              title: const Text('Role'),
-              subtitle: Text(profile?.role.name.toUpperCase() ?? 'N/A'),
+            const SizedBox(height: AppSpacing.lg),
+            // Practice Preferences Card
+            const Text('Practice Preferences', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.sm),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Gentle Reward Animations'),
+                    subtitle: const Text('Show celebratory animations on activity completion'),
+                    value: settings.rewardAnimationsEnabled,
+                    onChanged: (val) => settingsNotifier.toggleRewardAnimations(val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Sound Effects & Cues'),
+                    subtitle: const Text('Play gentle audio feedback during practice'),
+                    value: settings.soundEnabled,
+                    onChanged: (val) => settingsNotifier.toggleSound(val),
+                  ),
+                ],
+              ),
             ),
-            ListTile(
-              title: const Text('Country'),
-              subtitle: Text(profile?.country ?? 'N/A'),
+            const SizedBox(height: AppSpacing.lg),
+            // Clinical, Legal & Support Card
+            const Text('Legal, Trust & Research', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.sm),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.info_outline_rounded, color: AppColors.primaryLight),
+                    title: const Text('About LinguaCare'),
+                    subtitle: const Text('What the app does and does not do'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen())),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.secondaryLight),
+                    title: const Text('Privacy and Your Data'),
+                    subtitle: const Text('DPDP Act 2023 summary and privacy policies'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen())),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.description_outlined, color: Colors.blueGrey),
+                    title: const Text('Terms of Service'),
+                    subtitle: const Text('User agreement and non-clinical disclaimer'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsOfServiceScreen())),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.help_outline_rounded, color: AppColors.teacherAccent),
+                    title: const Text('Help and FAQ'),
+                    subtitle: const Text('Common questions and support guidance'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FaqScreen())),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.biotech_outlined, color: Color(0xFF6366F1)),
+                    title: const Text('Your Consents (Research)'),
+                    subtitle: const Text('Manage research participation and data donation'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ResearchConsentsScreen())),
+                  ),
+                ],
+              ),
             ),
-            ListTile(
-              title: const Text('Email'),
-              subtitle: Text(profile?.email ?? session.user?.email ?? 'N/A'),
+            const SizedBox(height: AppSpacing.lg),
+            // Device Data Card
+            const Text('Device Data & Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.sm),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.cleaning_services_outlined, color: Colors.orange),
+                title: const Text('Clear data on this device'),
+                subtitle: const Text('Remove journal, schedules, cards, checklists'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _onClearLocalData,
+              ),
             ),
-            const Divider(height: 32),
-            const Text('Practice Preferences', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              title: const Text('Gentle Reward Animations'),
-              subtitle: const Text('Show celebratory animations on activity completion'),
-              value: settings.rewardAnimationsEnabled,
-              onChanged: (val) => settingsNotifier.toggleRewardAnimations(val),
-            ),
-            SwitchListTile(
-              title: const Text('Sound Effects & Cues'),
-              subtitle: const Text('Play gentle audio feedback during practice'),
-              value: settings.soundEnabled,
-              onChanged: (val) => settingsNotifier.toggleSound(val),
-            ),
-            const Divider(height: 32),
-            const Text('Legal, Trust & Info', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            ListTile(
-              title: const Text('About LinguaCare'),
-              subtitle: const Text('What the app does and does not do'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen())),
-            ),
-            ListTile(
-              title: const Text('Privacy and Your Data'),
-              subtitle: const Text('DPDP Act 2023 summary and privacy policies'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen())),
-            ),
-            ListTile(
-              title: const Text('Terms of Service'),
-              subtitle: const Text('User agreement and non-clinical disclaimer'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsOfServiceScreen())),
-            ),
-            ListTile(
-              title: const Text('Help and FAQ'),
-              subtitle: const Text('Common questions and support guidance'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FaqScreen())),
-            ),
-            const Divider(height: 32),
-            const Text('Device Data Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            ListTile(
-              title: const Text('Clear data on this device'),
-              subtitle: const Text('Remove journal, schedules, cards, checklists'),
-              trailing: const Icon(Icons.delete_outline, color: Colors.orange),
-              onTap: _onClearLocalData,
-            ),
-            const Divider(height: 32),
+            const SizedBox(height: AppSpacing.xl),
             PrimaryButton(
               onPressed: _onSignOut,
               text: 'Sign Out',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             OutlinedButton(
               onPressed: _isLoading ? null : _onDeleteAccount,
-              style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.errorLight,
+                side: const BorderSide(color: AppColors.errorLight),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+              ),
               child: _isLoading
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Delete Account'),
             ),
           ],

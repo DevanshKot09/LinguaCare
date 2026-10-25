@@ -158,6 +158,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         UserRole.teacher => '/teacher',
         UserRole.adult => '/adult',
         UserRole.specialist => '/specialist',
+        UserRole.admin => '/admin',
       };
       try {
         context.go(home);

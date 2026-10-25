@@ -166,7 +166,18 @@ class SharingManagementView extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Error loading links: $e'),
+          error: (e, _) {
+            debugPrint('Error loading links: $e');
+            return const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Text(
+                  'No active sharing connections found. Ensure your account is connected or try again later.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );

@@ -206,6 +206,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
         UserRole.teacher => '/teacher',
         UserRole.adult => '/adult',
         UserRole.specialist => '/specialist',
+        UserRole.admin => '/admin',
       };
       context.go(homeRoute);
     } on AuthFailure catch (e) {

@@ -8,7 +8,7 @@ import '../../data/repositories/supabase_profile_repository.dart';
 import '../../domain/auth/auth_user.dart' as domain;
 import '../../domain/profile/profile.dart';
 
-enum UserRole { parent, teacher, adult, specialist }
+enum UserRole { parent, teacher, adult, specialist, admin }
 
 enum AuthSessionStatus {
   loading,
@@ -40,6 +40,7 @@ class AppSessionState {
   bool get hasProfile => status == AuthSessionStatus.authenticated;
   UserRole? get role => profile?.role ?? user?.role;
   bool get isSpecialistVerified => profile?.verified ?? false;
+  bool get isAdmin => role == UserRole.admin;
   int get childCount => profile?.children.length ?? 0;
 
   AppSessionState copyWith({

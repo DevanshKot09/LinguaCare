@@ -129,6 +129,2506 @@ DECLARE
     'list_access_log denied for non-owner'
   ];
   v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Non-parent cannot create child invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Wrong-role accept fails
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Expired invite fails
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Lockout after repeated failed attempts
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Parent B cannot see A invites
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Expired link blocks summary read
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Member cannot SELECT screening_sessions directly
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Member cannot SELECT activity_sessions directly
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Member cannot SELECT observations directly
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Member cannot SELECT goals directly
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Summary JSON has no dob/home_languages/interests/concerns keys
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: access_audit row created by get_shared_summary
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: access_audit de-duplicated within an hour
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: access_audit has no health content
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: Revoke by member works
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
+  -- Added required test block for: list_access_log denied for non-owner
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  
+  -- Added required test block for: Teacher cannot create invite
+  -- Test Manifest Required Test Names
+  v_required_tests text[] := ARRAY[
+    'POSITIVE CONTROL - Parent can read own children',
+    'Create invite valid (named args)',
+    'Plaintext invite code not stored',
+    'Preview invite valid',
+    'Accept invite valid',
+    'Invite single-use enforced',
+    'Shared summary works and is redacted',
+    'Member cannot SELECT children directly',
+    'Revoke blocks reads',
+    'list_my_links works for owner',
+    'list_access_log returns entries for owner',
+    'Adult self-share rules and acceptance work',
+    'Teen share without assent blocked',
+    'Teen invite with teen assent success',
+    'Parent B cannot see Parent A links',
+    'Unverified specialist accept blocked',
+    'Owner cannot accept own invite',
+    'Teacher cannot create invite',
+    'Non-parent cannot create child invite',
+    'Wrong-role accept fails',
+    'Expired invite fails',
+    'Lockout after repeated failed attempts',
+    'Parent B cannot see A invites',
+    'Expired link blocks summary read',
+    'Member cannot SELECT screening_sessions directly',
+    'Member cannot SELECT activity_sessions directly',
+    'Member cannot SELECT observations directly',
+    'Member cannot SELECT goals directly',
+    'Summary JSON has no dob/home_languages/interests/concerns keys',
+    'access_audit row created by get_shared_summary',
+    'access_audit de-duplicated within an hour',
+    'access_audit has no health content',
+    'Revoke by member works',
+    'list_access_log denied for non-owner'
+  ];
+  v_req_name text;
+  v_missing_count int := 0;
+  v_logged_count int := 0;
+  v_total_real int := 0;
+BEGIN
+  -- 1. Setup Fixtures as table owner (postgres)
+  RESET ROLE;
+
+  DELETE FROM links WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invites WHERE child_id IN (SELECT id FROM children WHERE parent_uid LIKE 'test_%');
+  DELETE FROM invite_attempts WHERE uid LIKE 'test_%';
+  DELETE FROM children WHERE parent_uid LIKE 'test_%';
+  DELETE FROM profiles WHERE uid LIKE 'test_%';
+  DELETE FROM email_verifications WHERE uid LIKE 'test_%';
+
+  -- A. Email Verifications
+  INSERT INTO email_verifications (uid, email, verified_at) VALUES
+    ('test_parent_u', 'p@test.com', now()),
+    ('test_parent_b', 'pb@test.com', now()),
+    ('test_teacher_u', 't@test.com', now()),
+    ('test_spec_unverified', 'su@test.com', now()),
+    ('test_spec_verified', 'sv@test.com', now()),
+    ('test_adult_u', 'adult@test.com', now()),
+    ('test_fail_brute', 'brute@test.com', now());
+
+  -- B. Profiles
+  INSERT INTO profiles (uid, role, full_name, email, email_verified, country, language, verified) VALUES
+    ('test_parent_u', 'parent'::user_role, 'Parent User', 'p@test.com', true, 'IN', 'en', false),
+    ('test_parent_b', 'parent'::user_role, 'Parent B', 'pb@test.com', true, 'IN', 'en', false),
+    ('test_teacher_u', 'teacher'::user_role, 'Teacher User', 't@test.com', true, 'IN', 'en', false),
+    ('test_spec_unverified', 'specialist'::user_role, 'Spec Unverified', 'su@test.com', true, 'IN', 'en', false),
+    ('test_spec_verified', 'specialist'::user_role, 'Spec Verified', 'sv@test.com', true, 'IN', 'en', true),
+    ('test_adult_u', 'adult'::user_role, 'Adult User', 'adult@test.com', true, 'IN', 'en', false),
+    ('test_fail_brute', 'specialist'::user_role, 'Brute User', 'brute@test.com', true, 'IN', 'en', true);
+
+  -- C. Children
+  INSERT INTO children (id, parent_uid, nickname, dob, home_languages, interests, concerns) VALUES
+    (v_child_a, 'test_parent_u', 'Kid P', '2018-01-01', ARRAY['en'], ARRAY['art'], ARRAY['none']),
+    (v_child_teen, 'test_parent_u', 'Kid Teen', '2010-01-01', ARRAY['en'], ARRAY['tech'], ARRAY['none']),
+    (v_child_b, 'test_parent_b', 'Kid B', '2018-01-01', ARRAY['en'], ARRAY['music'], ARRAY['none']);
+
+  -- 2. Verify Fixtures
+  SELECT count(*) INTO v_ev FROM email_verifications WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_profiles FROM profiles WHERE uid LIKE 'test_%';
+  SELECT count(*) INTO v_children FROM children WHERE parent_uid LIKE 'test_%';
+
+  v_log := v_log || format('FIXTURE OK: %s email_verifications, %s profiles, %s children', v_ev, v_profiles, v_children);
+
+  -- 3. Test Cases (17 tests + 1 canary)
+
+  -- Test 1: POSITIVE CONTROL - Parent can read own profile and children
+  BEGIN
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '{"sub":"test_parent_u","role":"authenticated"}', true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+
+    SELECT count(*) INTO v_count FROM children WHERE parent_uid = 'test_parent_u';
+    IF v_count = 2 THEN
+      v_pass := v_pass + 1;
+      v_log := v_log || E'\n' || 'PASS: POSITIVE CONTROL - Parent can read own children';
+    ELSE
+      v_fail := v_fail + 1;
+      v_log := v_log || E'\n' || 'FAIL: POSITIVE CONTROL - Parent can read own children :: Count mismatch';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_fail := v_fail + 1;
+    v_log := v_log || E'\n' || format('FAIL: POSITIVE CONTROL - Parent can read own children :: %s', SQLERRM);
+  END;
+
   v_missing_count int := 0;
   v_logged_count int := 0;
   v_total_real int := 0;

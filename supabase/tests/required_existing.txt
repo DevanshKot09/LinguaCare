@@ -6,7 +6,7 @@ User A cannot insert profile for another user
 Screening session insert valid
 Screening sessions update denied
 Consents insert valid
-Consents update valid
+Consents update denied (append-only)
 Complete profile enforces email verification
 Complete profile blocks duplicate profile
 Profile role modification rejected
@@ -25,7 +25,7 @@ Children update of dob out of range rejected
 Children update of parent_uid rejected
 Screening sessions delete allowed for parent owner
 Activity sessions delete allowed for parent owner
-Consents delete allowed for owner
+Consents delete denied (append-only)
 Profile role modification to admin rejected
 Adult user under 18 rejected
 Admin role assignment from client rejected

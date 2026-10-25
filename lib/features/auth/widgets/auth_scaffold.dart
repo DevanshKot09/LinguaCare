@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class AuthScaffold extends StatelessWidget {
   final String title;
@@ -15,12 +16,30 @@ class AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: actions,
-        backgroundColor: theme.colorScheme.surface,
-      ),
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          context.go('/welcome');
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'Back',
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                context.go('/welcome');
+              }
+            },
+          ),
+          title: Text(title),
+          actions: actions,
+          backgroundColor: theme.colorScheme.surface,
+        ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -45,6 +64,7 @@ class AuthScaffold extends StatelessWidget {
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

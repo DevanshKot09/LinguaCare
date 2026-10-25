@@ -18,12 +18,15 @@ import '../../features/parent/parent_home_screen.dart';
 import '../../features/teacher/teacher_home_screen.dart';
 import '../../features/adult/adult_home_screen.dart';
 import '../../features/specialist/specialist_home_screen.dart';
+import '../../features/specialist/specialist_assessments_screen.dart';
 import '../../features/screening/screening_intro_screen.dart';
 import '../../features/screening/screening_question_screen.dart';
 import '../../features/screening/screening_report_screen.dart';
 import '../../features/screening/screening_history_screen.dart';
 import '../../features/tools/tools_hub_screen.dart';
 import '../../features/export/export_summary_screen.dart';
+import '../../features/admin/admin_home_screen.dart';
+import '../../core/widgets/not_found_screen.dart';
 import 'app_session.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -33,6 +36,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: sessionNotifier,
+    errorBuilder: (context, state) => NotFoundScreen(errorPath: state.uri.path),
     redirect: (context, state) {
       final path = state.uri.path;
       String? target;
@@ -56,14 +60,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           UserRole.teacher => '/teacher',
           UserRole.adult => '/adult',
           UserRole.specialist => '/specialist',
+          UserRole.admin => '/admin',
         };
 
-        const authPaths = ['/splash', '/onboarding', '/welcome', '/login', '/sign-up', '/verify-email', '/forgot-password', '/role-setup'];
-        if (authPaths.any((p) => path.startsWith(p))) {
+        const authPaths = ['/splash', '/onboarding', '/welcome', '/login', '/sign-up', '/verify-email', '/forgot-password'];
+        if (authPaths.any((p) => path.startsWith(p)) || path == '/role-setup') {
           target = targetRoleHome;
         }
 
-        const roleHomes = ['/parent', '/teacher', '/adult', '/specialist'];
+        const roleHomes = ['/parent', '/teacher', '/adult', '/specialist', '/admin'];
         if (roleHomes.any((h) => path.startsWith(h)) && !path.startsWith(targetRoleHome)) {
           target = targetRoleHome;
         }
@@ -99,6 +104,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/teacher', builder: (context, state) => const TeacherHomeScreen()),
       GoRoute(path: '/adult', builder: (context, state) => const AdultHomeScreen()),
       GoRoute(path: '/specialist', builder: (context, state) => const SpecialistHomeScreen()),
+      GoRoute(path: '/admin', builder: (context, state) => const AdminHomeScreen()),
+      GoRoute(
+        path: '/specialist/assessments',
+        builder: (context, state) {
+          final childId = state.uri.queryParameters['childId'];
+          final subjectUid = state.uri.queryParameters['subjectUid'];
+          return SpecialistAssessmentsScreen(childId: childId, subjectUid: subjectUid);
+        },
+      ),
       GoRoute(
         path: '/screening/intro',
         builder: (context, state) {

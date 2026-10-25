@@ -1,0 +1,36 @@
+[rls_checks_phase_c]
+POSITIVE CONTROL - Parent can read own child
+Verified specialist with progress_notes link can record assessment
+Unverified specialist cannot record assessment
+Specialist without active link cannot record assessment
+Revoked link blocks assessment write
+Expired link blocks assessment write
+Scope progress cannot record assessment
+Teacher cannot record assessment
+Parent cannot record assessment
+Assessment author is derived server-side
+Assessment note over 500 chars rejected
+Assessment note with phone number rejected
+Assessment outcome outside allowed list rejected
+Assessment rows cannot be UPDATED
+Assessment rows cannot be DELETED by clients
+Assessment correction creates a new row
+Parent can read own child assessment
+Authoring specialist can read own assessment
+Other specialist cannot read assessment
+Teacher cannot read assessment
+Other parent cannot read assessment
+anon cannot read assessments
+Parent can grant research consent for own child
+Research consent requires teen assent for band 11_18
+Research consent rejects audio scope
+Research consent rejected for teacher
+Research consent rejected for specialist
+Parent can withdraw research consent
+Research withdrawal appends a new row
+Other parent cannot read research consent
+Member cannot read research consent
+Research export includes only consented children
+Research export excludes withdrawn consent
+Research export has no uid nickname dob email or notes
+Research export not readable by authenticated or anon

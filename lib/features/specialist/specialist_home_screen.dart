@@ -131,82 +131,106 @@ class SpecialistDashboardTab extends ConsumerWidget {
               return diff >= 0 && diff <= 14;
             }).length;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            return Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Linked Clients',
-                        count: '${links.length}',
-                        icon: Icons.people_rounded,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Expiring in 14 Days',
-                        count: '$expiringSoon',
-                        icon: Icons.timer_rounded,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: _StatCard(
+                    title: 'Linked Clients',
+                    count: '${links.length}',
+                    icon: Icons.people_rounded,
+                    color: Colors.blue,
+                  ),
                 ),
-                const SizedBox(height: 24),
-                const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: isVerified
-                            ? () => Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const AcceptInviteScreen()),
-                                )
-                            : null,
-                        icon: const Icon(Icons.qr_code_rounded),
-                        label: const Text('Add Client'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => onNavigateTab(2), // Plans tab
-                        icon: const Icon(Icons.assignment_rounded),
-                        label: const Text('Manage Plans'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text('Recent Access Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                logAsync.when(
-                  data: (logs) {
-                    if (logs.isEmpty) {
-                      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No recent activity logged.')));
-                    }
-                    return Column(
-                      children: logs.take(5).map((log) => Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              title: Text(log.action),
-                              subtitle: Text('${log.memberName} (${log.memberRole}) • ${log.timestamp.toLocal().toString().split('.').first}'),
-                            ),
-                          )).toList(),
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text('Error loading access log: $e'),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _StatCard(
+                    title: 'Expiring in 14 Days',
+                    count: '$expiringSoon',
+                    icon: Icons.timer_rounded,
+                    color: Colors.orange,
+                  ),
                 ),
               ],
             );
           },
+          loading: () => const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+          error: (e, _) => const Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  title: 'Linked Clients',
+                  count: '0',
+                  icon: Icons.people_rounded,
+                  color: Colors.blue,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _StatCard(
+                  title: 'Expiring in 14 Days',
+                  count: '0',
+                  icon: Icons.timer_rounded,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: isVerified
+                    ? () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const AcceptInviteScreen()),
+                        )
+                    : null,
+                icon: const Icon(Icons.qr_code_rounded),
+                label: const Text('Add Client'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => onNavigateTab(2), // Plans tab
+                icon: const Icon(Icons.assignment_rounded),
+                label: const Text('Manage Plans'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => context.push('/specialist/assessments'),
+          icon: const Icon(Icons.assessment_rounded),
+          label: const Text('Clinical Assessments'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text('Recent Access Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        logAsync.when(
+          data: (logs) {
+            if (logs.isEmpty) {
+              return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No recent activity logged.')));
+            }
+            return Column(
+              children: logs.take(5).map((log) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(log.action),
+                      subtitle: Text('${log.memberName} (${log.memberRole}) • ${log.timestamp.toLocal().toString().split('.').first}'),
+                    ),
+                  )).toList(),
+            );
+          },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Error loading dashboard: $e'),
+          error: (e, _) => const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No recent activity logged.'))),
         ),
       ],
     );
@@ -454,7 +478,18 @@ class _SpecialistPlansTabState extends ConsumerState<SpecialistPlansTab> {
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error loading goals: $e'),
+                    error: (e, _) {
+                      debugPrint('Error loading goals: $e');
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text(
+                            'Unable to load goals at this time. Please check your connection and try again.',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -463,7 +498,31 @@ class _SpecialistPlansTabState extends ConsumerState<SpecialistPlansTab> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Error loading client links: $e'),
+      error: (e, _) {
+        debugPrint('Error loading client links: $e');
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.info_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(height: 12),
+                const Text(
+                  'No client links available yet',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Connect with clients to view their support plans and track intervention progress.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
