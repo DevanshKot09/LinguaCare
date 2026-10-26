@@ -29,9 +29,9 @@ void main() {
         return '${name[0]}***${name[name.length - 1]}@${parts[1]}';
       }
 
-      expect(maskEmail('test@example.com'), 't***t@example.com');
-      expect(maskEmail('ab@example.com'), 'a***@example.com');
-      expect(maskEmail('a@example.com'), 'a***@example.com');
+      expect(maskEmail('<redacted>'), 't***<redacted>');
+      expect(maskEmail('<redacted>'), 'a***@example.com');
+      expect(maskEmail('<redacted>'), 'a***@example.com');
     });
 
     test('Session routing decision logic', () {
@@ -44,15 +44,15 @@ void main() {
 
       expect(getStatus(null), AuthSessionStatus.unauthenticated);
       expect(
-        getStatus(const AuthUser(uid: '1', email: 'a@b.com', emailVerified: false, profileExists: false, role: null)),
+        getStatus(const AuthUser(uid: '1', email: '<redacted>', emailVerified: false, profileExists: false, role: null)),
         AuthSessionStatus.unverifiedEmail,
       );
       expect(
-        getStatus(const AuthUser(uid: '1', email: 'a@b.com', emailVerified: true, profileExists: false, role: null)),
+        getStatus(const AuthUser(uid: '1', email: '<redacted>', emailVerified: true, profileExists: false, role: null)),
         AuthSessionStatus.needsProfileSetup,
       );
       expect(
-        getStatus(const AuthUser(uid: '1', email: 'a@b.com', emailVerified: true, profileExists: true, role: UserRole.parent)),
+        getStatus(const AuthUser(uid: '1', email: '<redacted>', emailVerified: true, profileExists: true, role: UserRole.parent)),
         AuthSessionStatus.authenticated,
       );
     });

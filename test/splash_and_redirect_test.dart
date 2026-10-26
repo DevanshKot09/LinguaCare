@@ -264,7 +264,7 @@ void main() {
     final notifier = AppSessionNotifier(container, autoInit: false);
     notifier.debugSetState(
       status: AuthSessionStatus.unverifiedEmail,
-      user: const AuthUser(uid: '1', email: 'test@example.com', emailVerified: false, profileExists: false, role: UserRole.parent),
+      user: const AuthUser(uid: '1', email: '<redacted>', emailVerified: false, profileExists: false, role: UserRole.parent),
     );
     expect(notifier.value.status, AuthSessionStatus.unverifiedEmail);
 

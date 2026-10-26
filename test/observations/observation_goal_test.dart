@@ -26,7 +26,7 @@ void main() {
 
     test('Note validator detects email addresses and blocks them', () {
       expect(isValidNote('Great session today.'), isTrue);
-      expect(isValidNote('Contact admin@linguacare.com for info'), isFalse);
+      expect(isValidNote('Contact <redacted> for info'), isFalse);
     });
 
     test('Tag limits enforce maximum of 8 tags', () {

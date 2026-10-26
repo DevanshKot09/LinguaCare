@@ -20,7 +20,7 @@ class FakeAuthRepository implements AuthRepository {
   Stream<AuthUser?> get authStateChanges => Stream.value(
         const AuthUser(
           uid: '123',
-          email: 'test@example.com',
+          email: '<redacted>',
           emailVerified: false,
           profileExists: false,
           role: null,
@@ -30,16 +30,16 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<AuthUser> signUpWithEmail(String email, String password) async {
     signUpCalled = true;
-    return const AuthUser(uid: '123', email: 'test@example.com', emailVerified: false, profileExists: false, role: null);
+    return const AuthUser(uid: '123', email: '<redacted>', emailVerified: false, profileExists: false, role: null);
   }
 
   @override
   Future<AuthUser> signInWithEmail(String email, String password) async =>
-      const AuthUser(uid: '123', email: 'test@example.com', emailVerified: true, profileExists: true, role: UserRole.parent);
+      const AuthUser(uid: '123', email: '<redacted>', emailVerified: true, profileExists: true, role: UserRole.parent);
 
   @override
   Future<AuthUser> signInWithGoogle() async =>
-      const AuthUser(uid: '123', email: 'test@example.com', emailVerified: true, profileExists: true, role: UserRole.parent);
+      const AuthUser(uid: '123', email: '<redacted>', emailVerified: true, profileExists: true, role: UserRole.parent);
 
   @override
   Future<void> signOut() async {}
@@ -49,7 +49,7 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser?> getCurrentUser() async =>
-      const AuthUser(uid: '123', email: 'test@example.com', emailVerified: false, profileExists: false, role: null);
+      const AuthUser(uid: '123', email: '<redacted>', emailVerified: false, profileExists: false, role: null);
 
   @override
   Future<void> sendOtp() async {
@@ -100,7 +100,7 @@ void main() {
     final emailField = tester.widget<TextFormField>(find.byType(TextFormField).at(0));
     expect(emailField.validator!(null), l10n.emailRequired);
     expect(emailField.validator!('invalid'), l10n.invalidEmail);
-    expect(emailField.validator!('test@example.com'), null);
+    expect(emailField.validator!('<redacted>'), null);
 
     final passwordField = tester.widget<TextFormField>(find.byType(TextFormField).at(1));
     expect(passwordField.validator!(''), l10n.passwordRequired);
@@ -123,7 +123,7 @@ void main() {
                 status: AuthSessionStatus.unverifiedEmail,
                 user: AuthUser(
                   uid: '123',
-                  email: 'test@example.com',
+                  email: '<redacted>',
                   emailVerified: false,
                   profileExists: false,
                   role: null,

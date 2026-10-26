@@ -23,7 +23,7 @@ void main() {
         goalItems: const [],
         rawObservations: const [
           SummaryObservationItem(
-            note: 'Child loves dinosaurs and speaks Spanish at home. DOB: 2018-05-01. Parent email: test@test.com.',
+            note: 'Child loves dinosaurs and speaks Spanish at home. DOB: 2018-05-01. Parent email: <redacted>.',
             setting: 'Home',
             date: '2026-03-01',
             isPrivate: false,
@@ -39,7 +39,7 @@ void main() {
         expect(obsText.contains('DOB'), isFalse);
         expect(obsText.contains('Spanish'), isFalse);
         expect(obsText.contains('dinosaurs'), isFalse);
-        expect(obsText.contains('test@test.com'), isFalse);
+        expect(obsText.contains('<redacted>'), isFalse);
       }
     });
 
@@ -221,7 +221,7 @@ void main() {
         goalItems: const [],
         rawObservations: const [
           SummaryObservationItem(
-            note: 'User uid: auth-uid-12345, email: user@linguacare.app',
+            note: 'User uid: auth-uid-12345, email: <redacted>',
             setting: 'Home',
             date: '2026-03-01',
             isPrivate: false,

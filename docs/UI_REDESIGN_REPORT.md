@@ -124,7 +124,7 @@ flutter run --dart-define-from-file=env/dev.json -d emulator-5554
      ```sql
      UPDATE public.profiles
      SET role = 'admin'
-     WHERE email = 'admin@lingua.ai';
+     WHERE email = '<redacted>';
      ```
 2. **Web Hosting Rewrites:**
    - For Firebase Hosting or Cloudflare Pages, configure single-page application URL rewrites to `/index.html` so `GoRouter` manages deep link navigation.

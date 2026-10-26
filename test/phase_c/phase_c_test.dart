@@ -239,12 +239,12 @@ void main() {
             researchConsentRepositoryProvider.overrideWithValue(FakeResearchConsentRepo(consents: fakeConsents)),
             appSessionStateProvider.overrideWith((ref) => AppSessionState(
                   status: AuthSessionStatus.authenticated,
-                  user: const AuthUser(uid: 'u1', email: 'parent@test.com', emailVerified: true, profileExists: true, role: null),
+                  user: const AuthUser(uid: 'u1', email: '<redacted>', emailVerified: true, profileExists: true, role: null),
                   profile: Profile(
                     uid: 'u1',
                     role: UserRole.parent,
                     fullName: 'Parent',
-                    email: 'parent@test.com',
+                    email: '<redacted>',
                     emailVerified: true,
                     country: 'India',
                     language: 'en',
@@ -366,7 +366,7 @@ void main() {
               status: AuthSessionStatus.authenticated,
               user: AuthUser(
                 uid: 'u_parent',
-                email: 'parent@test.com',
+                email: '<redacted>',
                 emailVerified: true,
                 profileExists: true,
                 role: UserRole.parent,
@@ -375,7 +375,7 @@ void main() {
                 uid: 'u_parent',
                 role: UserRole.parent,
                 fullName: 'Parent User',
-                email: 'parent@test.com',
+                email: '<redacted>',
                 emailVerified: true,
                 country: 'India',
                 language: 'en',

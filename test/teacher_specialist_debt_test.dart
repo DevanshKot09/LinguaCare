@@ -166,7 +166,7 @@ void main() {
     });
 
     test('Observation note rejects email address', () {
-      expect(isValidObservationNote('Email user@test.com for info'), isFalse);
+      expect(isValidObservationNote('Email <redacted> for info'), isFalse);
     });
 
     test('Observation note rejects more than 500 characters', () {

@@ -10,10 +10,10 @@
 | `FIREBASE_SERVICE_ACCOUNT` | Supabase Secrets | `{"type": "service_account", ...}` | Developer / Admin | Firebase admin SDK JSON credentials |
 | `SMTP_HOST` | Supabase Secrets | `smtp.gmail.com` | Developer / Admin | Email server host |
 | `SMTP_PORT` | Supabase Secrets | `465` | Developer / Admin | Secure SMTP port (must be 465) |
-| `SMTP_USER` | Supabase Secrets | `sender@gmail.com` | Developer / Admin | SMTP authentication username |
+| `SMTP_USER` | Supabase Secrets | `<redacted>` | Developer / Admin | SMTP authentication username |
 | `SMTP_PASSWORD` | Supabase Secrets | `abcdefghijklmnop` | Developer / Admin | SMTP password / App Password |
 | `SMTP_FROM_NAME` | Supabase Secrets | `LinguaCare` | Developer / Admin | Sender display name |
-| `SMTP_FROM_EMAIL` | Supabase Secrets | `sender@gmail.com` | Developer / Admin | Sender email address |
+| `SMTP_FROM_EMAIL` | Supabase Secrets | `<redacted>` | Developer / Admin | Sender email address |
 | `OTP_PEPPER` | Supabase Secrets | `secure-random-pepper` | Developer / Admin | Cryptographic salt for OTP hashes |
 
 ---

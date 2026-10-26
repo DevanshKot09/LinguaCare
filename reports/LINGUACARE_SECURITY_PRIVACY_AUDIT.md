@@ -35,7 +35,7 @@ This audit evaluates the reliability, security architecture, Supabase Row-Level 
 
 - **Secret Scanning:** Repository scanned for committed credentials, private keys, and service-role secrets. Zero unmasked secrets found (`firebase_options.example.dart` and `env/dev.example.json` contain safe placeholders).
 - **Authentication Lifecycle:** Sign-in, sign-out, session restoration, email verification, and password reset flows verified.
-- **Admin Bootstrap Account (`admin@lingua.ai` / `#ADMIN#2026`):**
+- **Admin Bootstrap Account (`<redacted>` / `#ADMIN#2026`):**
   - Configured as bootstrap credentials for initial administrative setup.
   - Not hardcoded as a permanent frontend auth bypass.
   - Protected by backend role verification (`UserRole.specialist` / admin claims). Ordinary users cannot access administrative endpoints or specialist clinical assessment forms without verification.

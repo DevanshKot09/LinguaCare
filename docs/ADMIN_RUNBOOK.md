@@ -6,7 +6,7 @@ Specialists (Speech-Language Pathologists) register with their professional cred
 ---
 
 ## Role Testing Best Practices
-- Role testing should be conducted using **separate accounts** (e.g. Gmail aliases such as `name+parent@gmail.com`, `name+teacher@gmail.com`, `name+adult@gmail.com`, `name+specialist@gmail.com`).
+- Role testing should be conducted using **separate accounts** (e.g. Gmail aliases such as `<redacted>`, `<redacted>`, `<redacted>`, `<redacted>`).
 - Do NOT weaken role guards in release or debug; role guards (such as ensuring a signed-in Teacher is directed to `/teacher`) are correct and enforced.
 
 ---
