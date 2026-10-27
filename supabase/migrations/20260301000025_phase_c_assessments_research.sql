@@ -30,6 +30,7 @@ ALTER TABLE clinical_assessments ENABLE ROW LEVEL SECURITY;
 
 REVOKE INSERT, UPDATE, DELETE ON clinical_assessments FROM authenticated, anon, PUBLIC;
 
+DROP POLICY IF EXISTS "Clinical assessments select policy" ON clinical_assessments;
 CREATE POLICY "Clinical assessments select policy" ON clinical_assessments
   FOR SELECT
   USING (
@@ -117,6 +118,7 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION record_assessment(uuid, text, date, text[], text[], text, text, text[], text, text, uuid) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION record_assessment(uuid, text, date, text[], text[], text, text, text[], text, text, uuid) FROM anon, public;
 
 
 -- 2. Research Consents Table & RPCs
@@ -144,6 +146,7 @@ ALTER TABLE research_consents ENABLE ROW LEVEL SECURITY;
 
 REVOKE INSERT, UPDATE, DELETE ON research_consents FROM authenticated, anon, PUBLIC;
 
+DROP POLICY IF EXISTS "Research consents owner select" ON research_consents;
 CREATE POLICY "Research consents owner select" ON research_consents
   FOR SELECT
   USING (grantor_uid = auth.jwt()->>'sub');
@@ -264,11 +267,11 @@ consented AS (
   SELECT * FROM latest_consent WHERE granted = true
 )
 SELECT
-  encode(extensions.digest(coalesce(c.id::text, c.subject_uid) || convert_to(rs.salt::text, 'UTF8'), 'sha256'), 'hex') AS pseudo_id,
-  c.age_months,
+  encode(extensions.digest(coalesce(c.id::text, rc.subject_uid) || convert_to(rs.salt::text, 'UTF8'), 'sha256'), 'hex') AS pseudo_id,
+  (date_part('year', age(current_date, c.dob)) * 12 + date_part('month', age(current_date, c.dob)))::int AS age_months,
   c.band,
   p.country,
-  c.multilingual
+  (cardinality(c.home_languages) > 1) AS multilingual
 FROM consented rc
 JOIN children c ON c.id = rc.child_id
 JOIN profiles p ON p.uid = c.parent_uid

@@ -24,7 +24,6 @@ begin
 END;
 $$;
 GRANT EXECUTE ON FUNCTION withdraw_consent(text, uuid) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION withdraw_consent(text) TO authenticated, service_role;
 
 -- 2. Specialist Licence Change Trigger (sets verified = false when licence fields change)
 CREATE OR REPLACE FUNCTION handle_specialist_licence_change()

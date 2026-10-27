@@ -23,7 +23,7 @@ BEGIN
   end if;
 
   select role into v_role from profiles where uid = v_uid;
-  if v_role <> 'admin' then
+  if v_role is null or v_role <> 'admin' then
     raise exception 'Forbidden: admin role required';
   end if;
 
