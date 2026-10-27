@@ -1,11 +1,11 @@
 # Build State - LinguaCare (DLD)
 
-## Master Build 2 - Step 1C Status Report
+## Master Build 2 - Step 2 Status Report
 
-### Verified (with the raw-output reference)
-- **Database Migrations & Remote Truth**: Migrations `000024`, `000025`, and `000026` (`admin_overview()`) successfully applied to remote Supabase project. Verified via raw `npx supabase migration list` showing all 27 versions applied in both Local and Remote columns.
-- **RLS & Security Audit Scripts**: Executed SQL check suites via MCP/`db query` (`admin_overview_check.sql` passed with `ADMIN_OVERVIEW_CHECK: PASS`). Verified table privileges and function execution privileges (`has_function_privilege`).
-- **Test Suite & Guardrails**: 157 tests passing (`00:15 +157: All tests passed!`, 147 test declarations). Zero analyzer errors (`No issues found!`). Zero `supabase.auth` in `lib/`, zero direct table reads in member screens, zero `service_role`/`sb_secret` strings.
+### Verified (with raw-output reference)
+- **Database Migrations & Remote Truth**: Migrations `000000` through `000027` (`reset_profile`) successfully applied to remote Supabase project. Verified via raw `npx supabase migration list` showing all 28 versions applied in both Local and Remote columns.
+- **Reset Profile RPC & RLS Test Harness**: Executed `supabase/tests/rls_checks_reset_profile.sql` via MCP/`db query`. Result: `RESET_PROFILE_TESTS: PASS (Passed: 11, Failed: 0)`.
+- **Test Suite**: All test suites including Step 1B/2 tests verified. Zero analyzer errors (`No issues found!`).
 - **Release Safety Configuration**: `isMinifyEnabled = false` and `isShrinkResources = false` set in release buildType for v1.
 
 ### NOT verified
