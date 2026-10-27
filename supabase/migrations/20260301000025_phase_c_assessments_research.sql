@@ -111,8 +111,8 @@ BEGIN
   )
   RETURNING id into v_assessment_id;
 
-  INSERT INTO access_audit (uid, child_id, subject_uid, action)
-  VALUES (v_uid, p_child_id, p_subject_uid, 'record_assessment');
+  INSERT INTO access_audit (actor_uid, action, table_name, record_id)
+  VALUES (v_uid, 'record_assessment', 'clinical_assessments', v_assessment_id::text);
 
   RETURN v_assessment_id;
 END;

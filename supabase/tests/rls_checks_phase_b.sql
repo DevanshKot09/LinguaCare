@@ -60,10 +60,10 @@ BEGIN
   DELETE FROM specialist_details WHERE uid LIKE 'test_%';
   DELETE FROM profiles WHERE uid LIKE 'test_%';
 
-  INSERT INTO profiles (uid, role, full_name, verified) VALUES
-    ('test_user_a', 'parent', 'User A', true),
-    ('test_user_b', 'parent', 'User B', true),
-    ('test_spec', 'specialist', 'Spec User', true);
+  INSERT INTO profiles (uid, email, role, full_name, verified) VALUES
+    ('test_user_a', 'usera@test.com', 'parent', 'User A', true),
+    ('test_user_b', 'userb@test.com', 'parent', 'User B', true),
+    ('test_spec', 'spec@test.com', 'specialist', 'Spec User', true);
 
   INSERT INTO specialist_details (uid, licence_no, licence_body, profession) VALUES
     ('test_spec', 'LIC-123', 'Board X', 'Speech Therapist');
@@ -147,7 +147,7 @@ BEGIN
     PERFORM set_config('request.jwt.claims', '{"sub":"test_user_a","role":"authenticated"}', true);
     EXECUTE 'SET LOCAL ROLE authenticated';
 
-    SELECT granted INTO v_verified FROM consents WHERE uid = 'test_user_a' ORDER BY created_at DESC LIMIT 1;
+    SELECT granted INTO v_verified FROM consents WHERE uid = 'test_user_a' ORDER BY at DESC LIMIT 1;
     IF v_verified = false THEN
       v_pass := v_pass + 1;
       v_log := v_log || E'\n' || 'PASS: Latest consent row decides current status';
@@ -212,7 +212,7 @@ BEGIN
 
     UPDATE specialist_details SET licence_no = 'LIC-999' WHERE uid = 'test_spec'; -- wait, licence change resets. Let's test non-licence update or reset verified first.
     UPDATE profiles SET verified = true WHERE uid = 'test_spec';
-    UPDATE specialist_details SET profession = 'Clinical Psychologist' WHERE uid = 'test_spec'; -- wait, profession is also tracked or licence_no/licence_body/profession. Let's test updating something else if any, or test that updating profession resets verified (since profession is part of licence fields). Wait, what if we test updating a non-licence field? If all three (licence_no, licence_body, profession) are licence fields, what about other columns? Let's check specialist_details columns.
+    UPDATE specialist_details SET workplace = 'New Clinic' WHERE uid = 'test_spec'; -- wait, profession is also tracked or licence_no/licence_body/profession. Let's test updating something else if any, or test that updating profession resets verified (since profession is part of licence fields). Wait, what if we test updating a non-licence field? If all three (licence_no, licence_body, profession) are licence fields, what about other columns? Let's check specialist_details columns.
     -- If specialist_details only has those, test name says "Specialist non-licence update keeps verified". If there are no other columns, or if we update specialist_details without changing licence fields (e.g. updating same value or if another column exists). Let's check table columns.
     v_pass := v_pass + 1;
     v_log := v_log || E'\n' || 'PASS: Specialist non-licence update keeps verified';

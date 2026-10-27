@@ -39,6 +39,7 @@ flutter:
   generate: true
   assets:
     - assets/images/
+    - assets/data/countries.json
     - assets/content/v1/
     - assets/content/v1/items/
     - assets/screening/v1/

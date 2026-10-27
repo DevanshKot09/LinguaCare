@@ -1,11 +1,11 @@
 POSITIVE CONTROL - Parent without links can reset profile
 Reset profile removes children and their data
+Reset profile allows choosing a new role afterwards
+Reset profile writes audit row without PII
+Another user cannot reset my profile
 Reset profile requires confirm text
 Reset profile blocked for verified specialist
 Reset profile blocked for specialist with assessments
 Reset profile blocked for member of active link
 Reset profile blocked for admin
-Reset profile allows choosing a new role afterwards
-Reset profile writes audit row without PII
-Another user cannot reset my profile
 anon cannot execute reset_profile

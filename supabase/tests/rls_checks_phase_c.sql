@@ -90,21 +90,21 @@ BEGIN
   DELETE FROM children WHERE parent_uid LIKE 'test_%';
   DELETE FROM profiles WHERE uid LIKE 'test_%';
 
-  INSERT INTO profiles (uid, role, full_name, verified, country) VALUES
-    ('test_parent_a', 'parent', 'Parent A', true, 'IN'),
-    ('test_parent_b', 'parent', 'Parent B', true, 'IN'),
-    ('test_spec_v', 'specialist', 'Verified Spec', true, 'IN'),
-    ('test_spec_u', 'specialist', 'Unverified Spec', false, 'IN'),
-    ('test_teacher', 'teacher', 'Teacher T', true, 'IN'),
-    ('test_adult_teen', 'adult', 'Teen Subject', true, 'IN');
+  INSERT INTO profiles (uid, email, role, full_name, verified, country) VALUES
+    ('test_parent_a', 'parenta@test.com', 'parent', 'Parent A', true, 'IN'),
+    ('test_parent_b', 'parentb@test.com', 'parent', 'Parent B', true, 'IN'),
+    ('test_spec_v', 'specv@test.com', 'specialist', 'Verified Spec', true, 'IN'),
+    ('test_spec_u', 'specu@test.com', 'specialist', 'Unverified Spec', false, 'IN'),
+    ('test_teacher', 'teacher@test.com', 'teacher', 'Teacher T', true, 'IN'),
+    ('test_adult_teen', 'teen@test.com', 'adult', 'Teen Subject', true, 'IN');
 
   INSERT INTO children (id, parent_uid, nickname, dob, band) VALUES
     ('10000000-0000-0000-0000-000000000001', 'test_parent_a', 'Child A', current_date - interval '8 years', '5_11'),
     ('10000000-0000-0000-0000-000000000002', 'test_parent_a', 'Teen Child', current_date - interval '14 years', '11_18');
 
   -- Active progress_notes link for verified specialist on Child A
-  INSERT INTO links (child_id, member_uid, member_role, scope, status) VALUES
-    ('10000000-0000-0000-0000-000000000001', 'test_spec_v', 'specialist', 'progress_notes', 'active');
+  INSERT INTO links (child_id, owner_uid, member_uid, member_role, scope, status) VALUES
+    ('10000000-0000-0000-0000-000000000001', 'test_parent_a', 'test_spec_v', 'specialist', 'progress_notes', 'active');
 
   -- Test 1: POSITIVE CONTROL - Parent can read own child
   BEGIN
@@ -500,9 +500,9 @@ BEGIN
       'moderate',
       'Correction note',
       v_assessment_id
-    ) INTO v_count;
+    ) INTO v_assessment_id;
 
-    IF v_count IS NOT NULL THEN
+    IF v_assessment_id IS NOT NULL THEN
       v_pass := v_pass + 1;
       v_log := v_log || E'\n' || 'PASS: Assessment correction creates a new row';
     else
