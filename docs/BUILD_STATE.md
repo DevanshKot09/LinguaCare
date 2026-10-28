@@ -47,8 +47,23 @@
   - **Adult Home Screen Polish**:
     - Added 4-tile Quick Actions grid (*Tools Hub*, *Comm Card*, *Simplifier*, *Practise*) on the adult home tab.
     - Added Daily Self-Advocacy Check-In card prompting reflection and linking directly to the private journal tab.
-    - Safely resolved `userId` from session state, eliminating test environment Firebase exceptions.
-- **Flutter Test Suite**: All 209 unit and widget tests passed successfully (`flutter test` 100% green across all suites).
+- **Phase 6 Hardening, Accessibility, Device Matrix & Release Readiness**:
+  - **Accessibility (a11y) & Dynamic Text Scaling**:
+    - Enforced minimum $48\times 48\text{ dp}$ touch target size across all `ElevatedButton` and `OutlinedButton` themes in `AppTheme.lightTheme` and `AppTheme.darkTheme` for WCAG 2.1 AA / Material 3 compliance.
+    - Verified dynamic type scaling at $2.0\times$ linear text scale (`TextScaler.linear(2.0)`) across core screens (`AboutScreen`, `PrivacyPolicyScreen`, `InstructionSimplifierScreen`, `AdultJournalScreen`, etc.) with zero RenderFlex overflows.
+  - **Device Matrix & Responsive Breakpoints**:
+    - Validated `ResponsiveScaffold` responsive breakpoint transitions: compact phones ($360\text{ dp}$ width) utilize bottom `NavigationBar`, while medium/tablet/desktop viewports ($\ge 600\text{ dp}$ width) adapt to `NavigationRail` with centered bodies constrained to $1000\text{ dp}$.
+  - **Security, Privacy & DPDP Act 2023 Compliance**:
+    - Verified `PrivacyPolicyScreen` DPDP Act principles, purpose limitation, user consent rights, and grievance officer contact.
+    - Verified `AboutScreen` explicit non-diagnostic medical disclaimer ("What LinguaCare Does NOT Do").
+    - Verified `LocalStore` user namespacing (`linguacare_${userId}_${key}`) and complete user data wiping via `clearAllForUser()`.
+    - Android Auto Backup disabled (`android:allowBackup="false"`, `android:fullBackupContent="false"`) in `AndroidManifest.xml` to prevent cloud leakage of private health/journal notes.
+  - **Clinical Instrument & Activity Asset Integrity**:
+    - Validated all 4 clinical screening instruments in `assets/screening/v1/` (`adult.json`, `parent_5_11.json`, `parent_11_18.json`, `teacher_5_11.json`): valid JSON, `status: "published"`, and complete item definitions.
+    - Validated all 15 clinical activity bundles in `assets/activities/v1/*.json`: valid JSON, `status: "published"`, and non-empty step sequences.
+  - **Phase 6 Automated Test Suite**:
+    - Created `test/phase6_hardening_and_release_test.dart` (7/7 tests passed).
+- **Flutter Test Suite**: All 216 unit and widget tests passed successfully (`flutter test` 100% green across all 11 test suites).
 - **Flutter Analyze**: `dart analyze lib` reports `No issues found! (0 warnings, 0 errors)`.
 - **Release APK**: Built `build\app\outputs\flutter-apk\app-release.apk` (**72.0 MB**).
 
