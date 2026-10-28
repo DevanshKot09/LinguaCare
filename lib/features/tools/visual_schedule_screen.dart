@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'tools_models.dart';
 import '../../core/local_store/local_store.dart';
 import '../../app/router/app_session.dart';
@@ -42,6 +45,7 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
             ScheduleStep(id: generateUuid(), iconName: 'shirt', label: 'Get dressed', timeText: '7:30 AM'),
             ScheduleStep(id: generateUuid(), iconName: 'shower', label: 'Brush teeth', timeText: '7:45 AM'),
             ScheduleStep(id: generateUuid(), iconName: 'apple', label: 'Eat breakfast', timeText: '8:00 AM'),
+            ScheduleStep(id: generateUuid(), iconName: 'star', label: 'Ready for school!', timeText: '8:30 AM'),
           ],
         ));
       }
@@ -76,6 +80,229 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
       _schedules.add(newSchedule);
     });
     _saveSchedules();
+  }
+
+  void _showTemplatePicker() {
+    if (_schedules.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 10 schedules allowed.')),
+      );
+      return;
+    }
+
+    final templates = [
+      {
+        'title': 'Morning Speech Routine',
+        'desc': 'Structured morning steps to build language autonomy',
+        'steps': [
+          ScheduleStep(id: generateUuid(), iconName: 'shirt', label: 'Get dressed', timeText: '7:30 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'shower', label: 'Brush teeth', timeText: '7:45 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'apple', label: 'Eat breakfast', timeText: '8:00 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'walk', label: 'Pack backpack', timeText: '8:15 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'star', label: 'Say morning goodbye!', timeText: '8:30 AM'),
+        ],
+      },
+      {
+        'title': 'Speech Practice Routine',
+        'desc': 'Short, low-pressure daily speech and therapy tasks',
+        'steps': [
+          ScheduleStep(id: generateUuid(), iconName: 'pencil', label: 'Word card warm-up', timeText: '4:00 PM'),
+          ScheduleStep(id: generateUuid(), iconName: 'play', label: 'Play Cartoon Memory game', timeText: '4:10 PM'),
+          ScheduleStep(id: generateUuid(), iconName: 'book', label: 'Sentence reconstruction', timeText: '4:20 PM'),
+          ScheduleStep(id: generateUuid(), iconName: 'star', label: 'Claim star reward!', timeText: '4:30 PM'),
+        ],
+      },
+      {
+        'title': 'Classroom Routine',
+        'desc': 'Visual cues for smooth school day transitions',
+        'steps': [
+          ScheduleStep(id: generateUuid(), iconName: 'shirt', label: 'Hang up coat & backpack', timeText: '8:50 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'walk', label: 'Circle time listening', timeText: '9:00 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'book', label: 'Reading & vocabulary', timeText: '9:30 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'apple', label: 'Snack & conversation', timeText: '10:15 AM'),
+          ScheduleStep(id: generateUuid(), iconName: 'home', label: 'Pack up for home', timeText: '3:00 PM'),
+        ],
+      },
+      {
+        'title': 'Bedtime Story Recount',
+        'desc': 'Encourage narrative recall and peaceful wind-down',
+        'steps': [
+          ScheduleStep(id: generateUuid(), iconName: 'shower', label: 'Pajamas & brush teeth', timeText: '7:30 PM'),
+          ScheduleStep(id: generateUuid(), iconName: 'book', label: 'Pick bedtime book', timeText: '7:45 PM'),
+          ScheduleStep(id: generateUuid(), iconName: 'play', label: 'Talk about the pictures', timeText: '8:00 PM'),
+          ScheduleStep(id: generateUuid(), iconName: 'bed', label: 'Story recount & sleep', timeText: '8:15 PM'),
+        ],
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Select Routine Template',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Quicksand'),
+                    ),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Pre-built communication schedules designed for children with language challenges.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: templates.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final t = templates[index];
+                      final stepsList = t['steps'] as List<ScheduleStep>;
+                      return ListTile(
+                        tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                          child: const Icon(Icons.auto_stories_rounded, color: Color(0xFF5B32E8)),
+                        ),
+                        title: Text(t['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('${t['desc']}\n(${stepsList.length} steps)', style: const TextStyle(fontSize: 12)),
+                        trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF5B32E8)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          final newSched = VisualSchedule(
+                            id: generateUuid(),
+                            title: t['title'] as String,
+                            steps: stepsList,
+                          );
+                          setState(() {
+                            _schedules.add(newSched);
+                          });
+                          _saveSchedules();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Added "${t['title']}" template')),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _printSchedule(VisualSchedule schedule) async {
+    final pdf = pw.Document();
+    final childLabel = schedule.childNickname != null && schedule.childNickname!.isNotEmpty
+        ? 'For ${schedule.childNickname}'
+        : 'Daily Communication Routine';
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('LinguaCare Visual Schedule', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColor.fromInt(0xFF5B32E8))),
+                  pw.Text('Date: ________________', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+                ],
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text('${schedule.title} • $childLabel', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+              pw.Text('Visual cues and predictable routines support comprehension and smooth transitions.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+              pw.SizedBox(height: 12),
+              pw.Divider(thickness: 1.5, color: PdfColor.fromInt(0xFF5B32E8)),
+              pw.SizedBox(height: 16),
+              pw.ListView.builder(
+                itemCount: schedule.steps.length,
+                itemBuilder: (context, index) {
+                  final step = schedule.steps[index];
+                  return pw.Container(
+                    margin: const pw.EdgeInsets.only(bottom: 12),
+                    padding: const pw.EdgeInsets.all(12),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey100,
+                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                      border: pw.Border.all(color: PdfColors.grey300),
+                    ),
+                    child: pw.Row(
+                      children: [
+                        pw.Container(
+                          width: 28,
+                          height: 28,
+                          decoration: pw.BoxDecoration(
+                            shape: pw.BoxShape.circle,
+                            color: PdfColor.fromInt(0xFF5B32E8),
+                          ),
+                          alignment: pw.Alignment.center,
+                          child: pw.Text('${index + 1}', style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 13)),
+                        ),
+                        pw.SizedBox(width: 14),
+                        pw.Expanded(
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(step.label, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                              if (step.timeText != null && step.timeText!.isNotEmpty)
+                                pw.Text('Time: ${step.timeText}', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                            ],
+                          ),
+                        ),
+                        pw.Container(
+                          width: 24,
+                          height: 24,
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: PdfColors.grey700, width: 1.5),
+                            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              pw.Spacer(),
+              pw.Divider(),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('LinguaCare Speech & Language Routine Tool', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                  pw.Text('Hang on the fridge or classroom desk for easy visual reference', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: '${schedule.title.replaceAll(' ', '_')}_VisualSchedule.pdf',
+    );
   }
 
   void _duplicateSchedule(VisualSchedule schedule) {
@@ -147,6 +374,8 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
     }
 
     if (_isTodayView && _activeTodaySchedule != null) {
+      final isAllDone = _completedStepIds.length == _activeTodaySchedule!.steps.length && _activeTodaySchedule!.steps.isNotEmpty;
+
       return Scaffold(
         appBar: AppBar(
           title: Text('Today: ${_activeTodaySchedule!.title}'),
@@ -155,6 +384,11 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
             onPressed: () => setState(() => _isTodayView = false),
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.print_rounded),
+              tooltip: 'Print / Save PDF',
+              onPressed: () => _printSchedule(_activeTodaySchedule!),
+            ),
             IconButton(
               icon: const Icon(Icons.refresh),
               tooltip: 'Reset for a new day',
@@ -171,6 +405,46 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
                   child: Text(
                     'Schedule for: ${_activeTodaySchedule!.childNickname}',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              if (isAllDone)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5B32E8), Color(0xFF8B5CF6)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF5B32E8).withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    children: [
+                      Text('🌟', style: TextStyle(fontSize: 32)),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Routine Completed! High Five! ⭐',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'All steps checked off! Fantastic communication practice.',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               const Padding(
@@ -254,6 +528,11 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
       appBar: AppBar(
         title: const Text('Visual Schedules'),
         actions: [
+          TextButton.icon(
+            onPressed: _showTemplatePicker,
+            icon: const Icon(Icons.auto_stories_rounded, size: 18),
+            label: const Text('Templates'),
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Schedule',
@@ -269,7 +548,13 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
                   children: [
                     const Text('No visual schedules yet.'),
                     const SizedBox(height: 16),
-                    ElevatedButton(onPressed: _addSchedule, child: const Text('Create Schedule')),
+                    ElevatedButton.icon(
+                      onPressed: _showTemplatePicker,
+                      icon: const Icon(Icons.auto_stories_rounded),
+                      label: const Text('Choose Routine Template'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(onPressed: _addSchedule, child: const Text('Create Blank Schedule')),
                   ],
                 ),
               )
@@ -318,20 +603,32 @@ class _VisualScheduleScreenState extends ConsumerState<VisualScheduleScreen> {
                           const SizedBox(height: 8),
                           Text('${schedule.steps.length} steps configured', style: const TextStyle(fontSize: 14)),
                           const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _activeTodaySchedule = schedule;
-                                _completedStepIds.clear();
-                                _isTodayView = true;
-                              });
-                            },
-                            icon: const Icon(Icons.play_arrow_rounded),
-                            label: const Text('Open Today View'),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                    foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _activeTodaySchedule = schedule;
+                                      _completedStepIds.clear();
+                                      _isTodayView = true;
+                                    });
+                                  },
+                                  icon: const Icon(Icons.play_arrow_rounded),
+                                  label: const Text('Open Today View'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              OutlinedButton.icon(
+                                onPressed: () => _printSchedule(schedule),
+                                icon: const Icon(Icons.print_rounded, size: 18),
+                                label: const Text('Print PDF'),
+                              ),
+                            ],
                           ),
                         ],
                       ),

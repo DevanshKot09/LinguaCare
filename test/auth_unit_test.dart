@@ -29,9 +29,9 @@ void main() {
         return '${name[0]}***${name[name.length - 1]}@${parts[1]}';
       }
 
-      expect(maskEmail('<redacted>'), 't***<redacted>');
-      expect(maskEmail('<redacted>'), 'a***@example.com');
-      expect(maskEmail('<redacted>'), 'a***@example.com');
+      expect(maskEmail('test@example.com'), 't***t@example.com');
+      expect(maskEmail('ab@example.com'), 'a***@example.com');
+      expect(maskEmail('abc@example.com'), 'a***c@example.com');
     });
 
     test('Session routing decision logic', () {

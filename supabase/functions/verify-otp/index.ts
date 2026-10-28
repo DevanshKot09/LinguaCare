@@ -32,6 +32,20 @@ serve(async (req) => {
       );
     }
 
+    // Auto-verify if user's token is already email_verified (e.g. Google Sign-In)
+    if (user.email_verified && user.email) {
+      await supabase.from('email_verifications').upsert({
+        uid: user.uid,
+        email: user.email,
+        verified_at: new Date().toISOString(),
+      }, { onConflict: 'uid' });
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'OAuth verified successfully' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const cleanCode = typeof code === 'string' ? code.trim() : '';
     if (!cleanCode || cleanCode.length !== 6) {
       return errorResponse('Valid 6-digit code is required', 400, 'INVALID_CODE');

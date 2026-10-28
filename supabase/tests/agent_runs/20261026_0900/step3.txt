@@ -1,0 +1,31 @@
+HARNESS SELF-TEST: OK
+TEST RESULTS: 26 passed, 0 failed
+PASS: POSITIVE CONTROL - Parent can submit bug report
+PASS: Bug report limited to 5 per day
+PASS: Bug report rejects phone number
+PASS: Bug report rejects over 1000 characters
+PASS: Bug report category must be in allowed list
+PASS: Reporter cannot read other user bug reports
+PASS: Admin can list bug reports
+PASS: Non-admin cannot list bug reports
+PASS: Admin can set bug report status
+PASS: anon cannot submit bug report
+PASS: POSITIVE CONTROL - User lists own notifications
+PASS: User cannot read another user's notifications
+PASS: Mark notifications read only affects own
+PASS: Unread count counts only own unread
+PASS: Link acceptance notifies the family without personal names
+PASS: Link revocation notifies the other party
+PASS: Notification payload has no health content
+PASS: Admin approval notifies the specialist
+PASS: Admin can list pending specialists
+PASS: Non-admin cannot list pending specialists
+PASS: Pending specialists list has licence fields only
+PASS: Admin audit feed has no health content
+PASS: Admin audit feed denied for non-admin
+PASS: anon cannot call admin RPCs
+PASS: Notifications cannot be inserted by clients
+PASS: Cascade delete removes bug reports and notifications
+MANIFEST: 26 expected, 26 logged, 0 missing
+TOTAL real tests logged (excluding canary): 26
+VACUOUS-RISK CHECK: OK

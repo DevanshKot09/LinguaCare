@@ -158,6 +158,10 @@ class FirebaseAuthRepository implements AuthRepository {
       await setClaims();
       await user.getIdToken(true);
 
+      try {
+        await _edgeClient.verifyOtp('GOOGLE_OAUTH');
+      } catch (_) {}
+
       return await _buildAuthUser(user);
     } on fb.FirebaseAuthException catch (e) {
       throw _mapFirebaseException(e);

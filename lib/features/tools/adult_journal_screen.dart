@@ -6,6 +6,9 @@ import '../../app/router/app_session.dart';
 import 'uuid_helper.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class AdultJournalScreen extends ConsumerStatefulWidget {
   const AdultJournalScreen({super.key});
@@ -18,6 +21,12 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
   List<JournalEntry> _entries = [];
   bool _isLoading = true;
   bool _showChart = true;
+  String _selectedFilterTag = 'All';
+
+  List<JournalEntry> get _filteredEntries {
+    if (_selectedFilterTag == 'All') return _entries;
+    return _entries.where((e) => e.situationTags.contains(_selectedFilterTag)).toList();
+  }
 
   final List<Map<String, dynamic>> _moodOptions = [
     {'key': 'great', 'label': 'Great', 'icon': '🌟', 'score': 5},
@@ -117,6 +126,106 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
     }
   }
 
+  Future<void> _exportJournalPdf() async {
+    if (_entries.isEmpty) return;
+
+    final doc = pw.Document();
+    final entriesToExport = _filteredEntries;
+
+    double avgScore = 0;
+    if (entriesToExport.isNotEmpty) {
+      final total = entriesToExport.fold<int>(0, (sum, e) {
+        final opt = _moodOptions.firstWhere((m) => m['key'] == e.mood, orElse: () => _moodOptions[2]);
+        return sum + (opt['score'] as int);
+      });
+      avgScore = total / entriesToExport.length;
+    }
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context ctx) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('LinguaCare - Adult Wellbeing & Journal',
+                      style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                  pw.Text(DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                      style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: pw.BorderRadius.circular(6),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Total Reflections: ${entriesToExport.length}',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                      pw.Text('Filter: $_selectedFilterTag',
+                          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Avg Wellbeing: ${avgScore.toStringAsFixed(1)} / 5.0',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                      pw.Text('Notice: Stored locally on device',
+                          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 16),
+            pw.Text('Reflections Log',
+                style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+            pw.SizedBox(height: 8),
+            pw.TableHelper.fromTextArray(
+              headers: ['Date', 'Mood', 'Situations', 'Notes / Observations'],
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.white),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+              data: entriesToExport.map((e) {
+                final moodOpt = _moodOptions.firstWhere((m) => m['key'] == e.mood, orElse: () => _moodOptions[2]);
+                return [
+                  DateFormat('MMM d, yyyy').format(e.dateTime),
+                  '${moodOpt['label']} (${moodOpt['score']}/5)',
+                  e.situationTags.join(', '),
+                  e.note ?? '-',
+                ];
+              }).toList(),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'Confidential & Clinical Self-Advocacy Record. LinguaCare support tool.',
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+            ),
+          ];
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => doc.save(),
+      name: 'Adult_Wellbeing_Journal_${DateFormat("yyyyMMdd").format(DateTime.now())}.pdf',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -130,12 +239,18 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
       appBar: AppBar(
         title: const Text('Adult Wellbeing Journal'),
         actions: [
-          if (_entries.isNotEmpty)
+          if (_entries.isNotEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.print_rounded),
+              tooltip: 'Export / Print Summary PDF',
+              onPressed: _exportJournalPdf,
+            ),
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               tooltip: 'Clear journal',
               onPressed: _clearJournal,
             ),
+          ],
         ],
       ),
       body: SafeArea(
@@ -192,10 +307,49 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
               _buildSummaryView(),
               const SizedBox(height: 24),
             ],
-            const Text('Entries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Entries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                if (_filteredEntries.isNotEmpty)
+                  Text('${_filteredEntries.length} ${_filteredEntries.length == 1 ? "entry" : "entries"}',
+                      style: const TextStyle(fontSize: 13, color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['All', ..._situationTags].map((tag) {
+                  final isSelected = _selectedFilterTag == tag;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6.0),
+                    child: FilterChip(
+                      label: Text(tag),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedFilterTag = tag;
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
             const SizedBox(height: 12),
-            if (_entries.isEmpty)
-              const Center(child: Padding(padding: EdgeInsets.all(24.0), child: Text('No journal entries yet.')))
+            if (_filteredEntries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Center(
+                  child: Text(
+                    _entries.isEmpty
+                        ? 'No journal entries yet.'
+                        : 'No entries found for "$_selectedFilterTag".',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ),
+              )
             else
               ..._buildGroupedEntriesList(),
           ],
@@ -205,6 +359,7 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
   }
 
   Widget _buildSummaryView() {
+    final displayEntries = _filteredEntries.isNotEmpty ? _filteredEntries : _entries;
     if (_showChart) {
       return SizedBox(
         height: 200,
@@ -219,20 +374,20 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 && value.toInt() < _entries.take(7).length) {
-                      final entry = _entries.take(7).toList()[value.toInt()];
+                    if (value.toInt() >= 0 && value.toInt() < displayEntries.take(7).length) {
+                      final entry = displayEntries.take(7).toList()[value.toInt()];
                       return Text(DateFormat('M/d').format(entry.dateTime), style: const TextStyle(fontSize: 10));
                     }
                     return const Text('');
                   },
                 ),
               ),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
-            barGroups: _entries.take(7).toList().asMap().entries.map((e) {
+            barGroups: displayEntries.take(7).toList().asMap().entries.map((e) {
               final moodOpt = _moodOptions.firstWhere((m) => m['key'] == e.value.mood, orElse: () => _moodOptions[2]);
               final score = (moodOpt['score'] as int).toDouble();
               return BarChartGroupData(
@@ -253,13 +408,13 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
         children: [
           TableRow(
             decoration: BoxDecoration(color: Colors.grey.shade200),
-            children: [
+            children: const [
               Padding(padding: EdgeInsets.all(8.0), child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
               Padding(padding: EdgeInsets.all(8.0), child: Text('Mood', style: TextStyle(fontWeight: FontWeight.bold))),
               Padding(padding: EdgeInsets.all(8.0), child: Text('Situation', style: TextStyle(fontWeight: FontWeight.bold))),
             ],
           ),
-          ..._entries.take(10).map((e) {
+          ...displayEntries.take(10).map((e) {
             final moodOpt = _moodOptions.firstWhere((m) => m['key'] == e.mood, orElse: () => _moodOptions[2]);
             return TableRow(
               children: [
@@ -275,7 +430,7 @@ class _AdultJournalScreenState extends ConsumerState<AdultJournalScreen> {
   }
 
   List<Widget> _buildGroupedEntriesList() {
-    return _entries.map((entry) {
+    return _filteredEntries.map((entry) {
       final moodOpt = _moodOptions.firstWhere((m) => m['key'] == entry.mood, orElse: () => _moodOptions[2]);
       return Card(
         margin: const EdgeInsets.only(bottom: 12),

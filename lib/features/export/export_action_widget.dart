@@ -15,6 +15,7 @@ void showExportSummaryDialog({
   required List<SummaryPracticeItem> practiceItems,
   required List<SummaryGoalItem> goalItems,
   required List<SummaryObservationItem> rawObservations,
+  List<SummaryAssessmentItem> clinicalAssessments = const [],
 }) {
   final showNotesToggle = scope == 'progress_notes' || role == 'parent' || role == 'adult';
 
@@ -34,6 +35,7 @@ void showExportSummaryDialog({
           practiceSummary: practiceItems,
           goalItems: goalItems,
           rawObservations: rawObservations,
+          clinicalAssessments: clinicalAssessments,
         );
         await ExportService.exportAndShare(doc);
       },

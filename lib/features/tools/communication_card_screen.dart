@@ -18,12 +18,16 @@ class _CommunicationCardScreenState extends ConsumerState<CommunicationCardScree
   bool _isLoading = true;
 
   final List<String> _presetNeeds = [
-    'I need extra time',
+    'I need extra time to process spoken information',
     'Please use shorter sentences',
-    'Please write it down',
-    'Please show me',
-    'I may ask you to repeat',
+    'Please write it down or email me',
+    'Please show me visually',
+    'I may ask you to repeat or rephrase',
     'Please check that I understood',
+    'I have Developmental Language Disorder (DLD)',
+    'Please allow me a quiet moment to find the words',
+    'Please speak at a calm, steady pace',
+    'I understand well; complex questions just take time',
   ];
 
   @override
@@ -43,7 +47,10 @@ class _CommunicationCardScreenState extends ConsumerState<CommunicationCardScree
         _cards.add(CommunicationCardModel(
           id: generateUuid(),
           title: 'My Needs',
-          needs: ['I need extra time', 'Please write it down'],
+          needs: [
+            'I need extra time to process spoken information',
+            'Please write it down or email me',
+          ],
           customLines: ['Thank you for your patience.'],
         ));
       }
@@ -66,11 +73,104 @@ class _CommunicationCardScreenState extends ConsumerState<CommunicationCardScree
       return;
     }
 
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choose Card Template',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Text('💼', style: TextStyle(fontSize: 24)),
+                  title: const Text('Workplace Accommodation'),
+                  subtitle: const Text('Written instructions, processing time, DLD disclosure'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _createCard(
+                      title: 'Workplace Accommodations',
+                      needs: [
+                        'I have Developmental Language Disorder (DLD)',
+                        'Please write it down or email me',
+                        'I need extra time to process spoken information',
+                      ],
+                      customLines: ['Thank you for supporting clear communication at work.'],
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Text('🩺', style: TextStyle(fontSize: 24)),
+                  title: const Text('Healthcare & Medical Visit'),
+                  subtitle: const Text('Medical terms explanation, confirmation checks'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _createCard(
+                      title: 'Healthcare & Medical Visit',
+                      needs: [
+                        'I need extra time to process spoken information',
+                        'Please write it down or email me',
+                        'Please check that I understood',
+                      ],
+                      customLines: ['Please explain unfamiliar medical terms simply.'],
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Text('🗣️', style: TextStyle(fontSize: 24)),
+                  title: const Text('Everyday Conversation'),
+                  subtitle: const Text('Word finding, calm pace, patience'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _createCard(
+                      title: 'Everyday Conversation',
+                      needs: [
+                        'Please allow me a quiet moment to find the words',
+                        'Please speak at a calm, steady pace',
+                        'I understand well; complex questions just take time',
+                      ],
+                      customLines: ['Thank you for your patience with me.'],
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.add_circle_outline_rounded),
+                  title: const Text('Blank Custom Card'),
+                  subtitle: const Text('Start from scratch with your chosen needs'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _createCard(
+                      title: 'Card ${_cards.length + 1}',
+                      needs: [_presetNeeds.first],
+                      customLines: [],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _createCard({
+    required String title,
+    required List<String> needs,
+    required List<String> customLines,
+  }) {
     final newCard = CommunicationCardModel(
       id: generateUuid(),
-      title: 'Card ${_cards.length + 1}',
-      needs: [_presetNeeds.first],
-      customLines: [],
+      title: title,
+      needs: needs,
+      customLines: customLines,
     );
 
     setState(() {
@@ -185,14 +285,32 @@ class _CommunicationCardScreenState extends ConsumerState<CommunicationCardScree
                           child: Text(c, style: const TextStyle(fontSize: 15, fontStyle: FontStyle.italic)),
                         )),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber.shade100,
-                        foregroundColor: Colors.black87,
-                      ),
-                      onPressed: () => _openFullScreen(card),
-                      icon: const Icon(Icons.fullscreen),
-                      label: const Text('Show High-Contrast Full Screen'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber.shade100,
+                              foregroundColor: Colors.black87,
+                            ),
+                            onPressed: () => _openFullScreen(card),
+                            icon: const Icon(Icons.fullscreen),
+                            label: const Text('Full Screen'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            final text = '${card.title}\n${card.needs.map((n) => "• $n").join("\n")}\n${card.customLines.join("\n")}';
+                            Clipboard.setData(ClipboardData(text: text));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Communication card copied to clipboard!')),
+                            );
+                          },
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          label: const Text('Copy Text'),
+                        ),
+                      ],
                     ),
                   ],
                 ),

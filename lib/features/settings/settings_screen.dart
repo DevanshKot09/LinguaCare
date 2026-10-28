@@ -16,6 +16,8 @@ import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'faq_screen.dart';
 import 'research_consents_screen.dart';
+import 'widgets/bug_report_dialog.dart';
+import 'widgets/edit_profile_dialog.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -225,6 +227,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ],
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => EditProfileDialog.show(
+                          context,
+                          currentName: profile?.fullName ?? '',
+                          currentCountry: profile?.country ?? 'India',
+                        ),
+                        icon: const Icon(Icons.edit_rounded, size: 16),
+                        label: const Text('Edit Profile'),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -307,6 +322,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     subtitle: const Text('Manage research participation and data donation'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ResearchConsentsScreen())),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.bug_report_rounded, color: Colors.deepOrange),
+                    title: const Text('Report a Problem or Idea'),
+                    subtitle: const Text('Send app feedback directly to the team'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => BugReportDialog.show(context),
                   ),
                 ],
               ),

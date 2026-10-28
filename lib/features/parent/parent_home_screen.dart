@@ -6,7 +6,6 @@ import '../../app/theme/app_colors.dart';
 import '../../core/responsive/responsive_scaffold.dart';
 import '../../domain/profile/profile.dart';
 import '../../l10n/app_localizations.dart';
-import '../learn/learn_home_screen.dart';
 import '../activities/activities_home_screen.dart';
 import '../activities/progress_dashboard_screen.dart';
 import '../sharing/sharing_management_view.dart';
@@ -14,6 +13,8 @@ import '../tools/tools_hub_screen.dart';
 import '../tools/communication_card_screen.dart';
 import '../tools/visual_schedule_screen.dart';
 import '../export/export_action_widget.dart';
+import '../export/summary_document.dart';
+import '../../domain/assessments/assessment_providers.dart';
 
 class ParentHomeScreen extends ConsumerStatefulWidget {
   const ParentHomeScreen({super.key});
@@ -46,17 +47,14 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
     final items = [
       ResponsiveScaffoldItem(label: l10n.tabHome, icon: Icons.home_rounded),
       ResponsiveScaffoldItem(label: l10n.tabPractise, icon: Icons.sports_esports_rounded),
-      ResponsiveScaffoldItem(label: l10n.tabLearn, icon: Icons.menu_book_rounded),
       ResponsiveScaffoldItem(label: l10n.tabProgress, icon: Icons.insights_rounded),
       ResponsiveScaffoldItem(label: l10n.tabFamily, icon: Icons.family_restroom_rounded),
     ];
 
-    final tabTitles = [l10n.tabHome, l10n.tabPractise, l10n.tabLearn, l10n.tabProgress, l10n.tabFamily];
+    final tabTitles = [l10n.tabHome, l10n.tabPractise, l10n.tabProgress, l10n.tabFamily];
 
     Widget bodyWidget;
-    if (_currentIndex == 2) {
-      bodyWidget = const LearnHomeScreen();
-    } else if (_currentIndex == 1) {
+    if (_currentIndex == 1) {
       if (_selectedChildId == null) {
         bodyWidget = Center(child: Text(l10n.noChildForScreening));
       } else {
@@ -66,7 +64,7 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
           audience: 'parent',
         );
       }
-    } else if (_currentIndex == 3) {
+    } else if (_currentIndex == 2) {
       if (_selectedChildId == null) {
         bodyWidget = Center(child: Text(l10n.noChildForScreening));
       } else {
@@ -75,48 +73,115 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
           title: '${selectedChild?.nickname ?? 'Child'} Progress',
         );
       }
-    } else if (_currentIndex == 4) {
+    } else if (_currentIndex == 3) {
       bodyWidget = ListView(
         padding: const EdgeInsets.all(24),
         children: [
           if (selectedChild != null) ...[
             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Child Tools: ${selectedChild.nickname}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CommunicationCardScreen())),
-                      icon: const Icon(Icons.record_voice_over_rounded),
-                      label: Text('Communication card for ${selectedChild.nickname}'),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.parentAccent.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.handyman_rounded, color: AppColors.parentAccent, size: 20),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Everyday Tools: ${selectedChild.nickname}',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Quicksand'),
+                              ),
+                              const Text(
+                                'Support communication routines and share records',
+                                style: TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VisualScheduleScreen())),
-                      icon: const Icon(Icons.calendar_today_rounded),
-                      label: const Text('Visual schedule'),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CommunicationCardScreen())),
+                        icon: const Icon(Icons.record_voice_over_rounded),
+                        label: Text('Communication Card for ${selectedChild.nickname}'),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        showExportSummaryDialog(
-                          context: context,
-                          role: 'parent',
-                          scope: 'progress_notes',
-                          subjectNickname: selectedChild.nickname,
-                          subjectAgeBand: is11to18 ? '11-18 yrs' : '5-11 yrs',
-                          isAccessEnded: false,
-                          screeningSessions: const [],
-                          practiceItems: const [],
-                          goalItems: const [],
-                          rawObservations: const [],
-                        );
-                      },
-                      icon: const Icon(Icons.picture_as_pdf_rounded),
-                      label: Text('Export summary for ${selectedChild.nickname}'),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VisualScheduleScreen())),
+                            icon: const Icon(Icons.calendar_today_rounded, size: 18),
+                            label: const Text('Visual Schedule'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () {
+                              final assessmentsAsync = ref.read(assessmentsProvider(selectedChild.id));
+                              final clinicalAssessments = assessmentsAsync.value?.map((a) => SummaryAssessmentItem(
+                                outcome: a.outcome == 'dld' ? 'Confirmed DLD (ICD-11 6A01.2)' : a.outcome,
+                                severity: a.severity ?? 'moderate',
+                                date: a.assessedOn.toLocal().toString().split(' ').first,
+                                domainsAffected: a.domainsAffected,
+                                note: a.note,
+                              )).toList() ?? [];
+
+                              showExportSummaryDialog(
+                                context: context,
+                                role: 'parent',
+                                scope: 'progress_notes',
+                                subjectNickname: selectedChild.nickname,
+                                subjectAgeBand: is11to18 ? '11-18 yrs' : '5-11 yrs',
+                                isAccessEnded: false,
+                                screeningSessions: const [],
+                                practiceItems: const [],
+                                goalItems: const [],
+                                rawObservations: const [],
+                                clinicalAssessments: clinicalAssessments,
+                              );
+                            },
+                            icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                            label: const Text('Export PDF'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

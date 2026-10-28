@@ -155,6 +155,8 @@ class SharingManagementView extends ConsumerWidget {
                                 builder: (context) => SharedSummaryDetailScreen(
                                   linkId: link.linkId,
                                   childName: link.childNickname,
+                                  childId: link.childId,
+                                  subjectUid: link.subjectUid,
                                 ),
                               ),
                             ),

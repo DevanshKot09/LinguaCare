@@ -1,0 +1,16 @@
+HARNESS SELF-TEST: OK
+TEST RESULTS: 11 passed, 0 failed
+PASS: POSITIVE CONTROL - Parent without links can reset profile
+PASS: Reset profile removes children and their data
+PASS: Reset profile allows choosing a new role afterwards
+PASS: Reset profile writes audit row without PII
+PASS: Another user cannot reset my profile
+PASS: Reset profile requires confirm text
+PASS: Reset profile blocked for verified specialist
+PASS: Reset profile blocked for specialist with assessments
+PASS: Reset profile blocked for member of active link
+PASS: Reset profile blocked for admin
+PASS: anon cannot execute reset_profile
+MANIFEST: 11 expected, 11 logged, 0 missing
+TOTAL real tests logged (excluding canary): 11
+VACUOUS-RISK CHECK: OK

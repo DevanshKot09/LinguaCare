@@ -66,6 +66,22 @@ class SummaryObservationItem {
   });
 }
 
+class SummaryAssessmentItem {
+  final String outcome;
+  final String severity;
+  final String date;
+  final List<String> domainsAffected;
+  final String? note;
+
+  const SummaryAssessmentItem({
+    required this.outcome,
+    required this.severity,
+    required this.date,
+    required this.domainsAffected,
+    this.note,
+  });
+}
+
 class SummaryDocument {
   final String title;
   final String generatedDate;
@@ -78,6 +94,7 @@ class SummaryDocument {
   final List<SummaryPracticeItem> practiceSummary;
   final List<SummaryGoalItem> goals;
   final List<SummaryObservationItem> observations;
+  final List<SummaryAssessmentItem> clinicalAssessments;
   final bool includeNotes;
   final bool isAccessEnded;
   final bool isEmptyDataset;
@@ -94,6 +111,7 @@ class SummaryDocument {
     required this.practiceSummary,
     required this.goals,
     required this.observations,
+    this.clinicalAssessments = const [],
     required this.includeNotes,
     required this.isAccessEnded,
     required this.isEmptyDataset,

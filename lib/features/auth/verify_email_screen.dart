@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/router/app_session.dart';
 import '../../data/repositories/firebase_auth_repository.dart';
 import '../../domain/auth/auth_failure.dart';
 import '../../l10n/app_localizations.dart';
-import 'widgets/auth_scaffold.dart';
 import 'widgets/inline_error.dart';
 import 'widgets/primary_button.dart';
 
@@ -150,7 +150,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     }
   }
 
-  void _navigateForward() {
+  Future<void> _navigateForward() async {
     final session = ref.read(appSessionStateProvider);
     if (session.status == AuthSessionStatus.authenticated && session.role != null) {
       final home = switch (session.role!) {
@@ -165,8 +165,22 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       } catch (_) {}
     } else {
       try {
-        context.go('/role-setup');
-      } catch (_) {}
+        final prefs = await SharedPreferences.getInstance();
+        final pendingRole = prefs.getString('pending_role') ?? 'parent';
+        final pendingName = prefs.getString('pending_name') ?? '';
+        final encodedName = Uri.encodeComponent(pendingName);
+        if (mounted) {
+          try {
+            context.go('/role-setup/form?role=$pendingRole&name=$encodedName');
+          } catch (_) {}
+        }
+      } catch (_) {
+        if (mounted) {
+          try {
+            context.go('/role-setup');
+          } catch (_) {}
+        }
+      }
     }
   }
 
@@ -207,96 +221,263 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     }
   }
 
-  Future<void> _onSignOut() async {
-    final authRepo = ref.read(authRepositoryProvider);
-    await authRepo.signOut();
-    if (!mounted) return;
-    context.go('/welcome');
+  Future<void> _handleBack() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.signOut();
+    } catch (_) {}
+    if (mounted) {
+      context.go('/sign-up');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final user = ref.watch(appSessionStateProvider).user;
     final maskedEmail = user != null ? _maskEmail(user.email) : 'your email';
+    final currentCode = _codeController.text;
 
-    return AuthScaffold(
-      title: l10n.verifyEmailTitle,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Icon(Icons.mark_email_unread_rounded, size: 48, color: Colors.blue),
-            const SizedBox(height: 16),
-            Text(
-              l10n.enterVerificationCode,
-              style: const TextStyle(fontSize: 14),
-              textAlign: TextAlign.center,
-              softWrap: true,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              maskedEmail,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-              softWrap: true,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 16),
-            InlineError(message: _errorMessage),
-            FittedBox(
-              fit: BoxFit.scaleDown,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleBack();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: 'Back to Sign Up',
+            onPressed: _handleBack,
+          ),
+          title: Text(
+            l10n.verifyEmailTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Quicksand'),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 180),
-                child: TextField(
-                  controller: _codeController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(6),
-                    FilteringTextInputFormatter.digitsOnly,
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Animated envelope badge
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B32E8).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: const Color(0xFF5B32E8).withValues(alpha: 0.2),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.mark_email_unread_rounded,
+                          size: 40,
+                          color: Color(0xFF5B32E8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Check your inbox',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Quicksand',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'We sent a 6-digit verification code to',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00C4B4).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        maskedEmail,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00897B),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    InlineError(message: _errorMessage),
+
+                    // 6-Box Pin Code Visual Display
+                    GestureDetector(
+                      onTap: () {
+                        FocusScope.of(context).requestFocus(FocusNode());
+                      },
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // 6 Visual Pin Boxes fitted to screen
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: List.generate(6, (index) {
+                                final isFilled = index < currentCode.length;
+                                final isCurrent = index == currentCode.length;
+                                final char = isFilled ? currentCode[index] : '';
+
+                                return Container(
+                                  width: 44,
+                                  height: 52,
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  decoration: BoxDecoration(
+                                    color: isFilled
+                                        ? const Color(0xFF5B32E8).withValues(alpha: 0.05)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isCurrent
+                                          ? const Color(0xFF5B32E8)
+                                          : isFilled
+                                              ? const Color(0xFF00C4B4)
+                                              : Colors.grey.withValues(alpha: 0.3),
+                                      width: isCurrent || isFilled ? 2 : 1.2,
+                                    ),
+                                    boxShadow: isCurrent
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFF5B32E8).withValues(alpha: 0.25),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.03),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      char,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF1E1546),
+                                        fontFamily: 'Quicksand',
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                          // Transparent real text field on top
+                          Opacity(
+                            opacity: 0.01,
+                            child: TextField(
+                              controller: _codeController,
+                              keyboardType: TextInputType.number,
+                              autofocus: true,
+                              inputFormatters: [
+                                LengthLimitingTextInputFormatter(6),
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              onChanged: (value) {
+                                setState(() {});
+                                final clean = value.replaceAll(RegExp(r'\D'), '');
+                                if (clean.length == 6 && !_isLoading) {
+                                  _onVerify();
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Tactile Verify Button
+                    PrimaryButton(
+                      onPressed: _isLoading || currentCode.length < 6 ? null : _onVerify,
+                      text: 'Verify',
+                      isLoading: _isLoading,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Resend Timer Row
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      children: [
+                        Text(
+                          "Didn't receive code? ",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _countdown == 0 && !_isResending ? _onResend : null,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            _countdown > 0 ? 'Resend code in ${_countdown}s' : 'Resend Code',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: _countdown > 0
+                                  ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
+                                  : const Color(0xFF5B32E8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Change email or switch account
+                    OutlinedButton.icon(
+                      onPressed: _handleBack,
+                      icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                      label: const Text('Back to Sign Up'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ],
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, letterSpacing: 2, fontWeight: FontWeight.bold),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    hintText: '000000',
-                  ),
-                  onChanged: (value) {
-                    final clean = value.replaceAll(RegExp(r'\D'), '');
-                    if (clean.length == 6 && !_isLoading) {
-                      _onVerify();
-                    }
-                  },
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              onPressed: _isLoading ? null : _onVerify,
-              text: 'Verify',
-              isLoading: _isLoading,
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: _countdown == 0 && !_isResending ? _onResend : null,
-              child: Text(
-                _countdown > 0 ? 'Resend code in ${_countdown}s' : l10n.resendCode,
-                textAlign: TextAlign.center,
-                softWrap: true,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _onSignOut,
-              child: const Text(
-                'Sign out / Use different email',
-                textAlign: TextAlign.center,
-                softWrap: true,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

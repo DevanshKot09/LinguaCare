@@ -92,122 +92,17 @@ DECLARE
   v_child_b uuid := '10000000-0000-0000-0000-000000000012'::uuid;
 
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -279,82 +174,12 @@ BEGIN
 
   -- Added required test block for: Non-parent cannot create child invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -426,82 +251,12 @@ BEGIN
 
   -- Added required test block for: Wrong-role accept fails
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -573,82 +328,12 @@ BEGIN
 
   -- Added required test block for: Expired invite fails
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -720,82 +405,12 @@ BEGIN
 
   -- Added required test block for: Lockout after repeated failed attempts
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -867,82 +482,12 @@ BEGIN
 
   -- Added required test block for: Parent B cannot see A invites
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -1014,82 +559,12 @@ BEGIN
 
   -- Added required test block for: Expired link blocks summary read
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -1161,82 +636,12 @@ BEGIN
 
   -- Added required test block for: Member cannot SELECT screening_sessions directly
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -1308,82 +713,12 @@ BEGIN
 
   -- Added required test block for: Member cannot SELECT activity_sessions directly
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -1455,82 +790,12 @@ BEGIN
 
   -- Added required test block for: Member cannot SELECT observations directly
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -1602,82 +867,12 @@ BEGIN
 
   -- Added required test block for: Member cannot SELECT goals directly
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -1749,82 +944,12 @@ BEGIN
 
   -- Added required test block for: Summary JSON has no dob/home_languages/interests/concerns keys
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -1896,82 +1021,12 @@ BEGIN
 
   -- Added required test block for: access_audit row created by get_shared_summary
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -2043,82 +1098,12 @@ BEGIN
 
   -- Added required test block for: access_audit de-duplicated within an hour
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -2190,82 +1175,12 @@ BEGIN
 
   -- Added required test block for: access_audit has no health content
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -2337,82 +1252,12 @@ BEGIN
 
   -- Added required test block for: Revoke by member works
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;
@@ -2484,82 +1329,12 @@ BEGIN
 
   -- Added required test block for: list_access_log denied for non-owner
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   
   -- Added required test block for: Teacher cannot create invite
   -- Test Manifest Required Test Names
-  v_required_tests text[] := ARRAY[
-    'POSITIVE CONTROL - Parent can read own children',
-    'Create invite valid (named args)',
-    'Plaintext invite code not stored',
-    'Preview invite valid',
-    'Accept invite valid',
-    'Invite single-use enforced',
-    'Shared summary works and is redacted',
-    'Member cannot SELECT children directly',
-    'Revoke blocks reads',
-    'list_my_links works for owner',
-    'list_access_log returns entries for owner',
-    'Adult self-share rules and acceptance work',
-    'Teen share without assent blocked',
-    'Teen invite with teen assent success',
-    'Parent B cannot see Parent A links',
-    'Unverified specialist accept blocked',
-    'Owner cannot accept own invite',
-    'Teacher cannot create invite',
-    'Non-parent cannot create child invite',
-    'Wrong-role accept fails',
-    'Expired invite fails',
-    'Lockout after repeated failed attempts',
-    'Parent B cannot see A invites',
-    'Expired link blocks summary read',
-    'Member cannot SELECT screening_sessions directly',
-    'Member cannot SELECT activity_sessions directly',
-    'Member cannot SELECT observations directly',
-    'Member cannot SELECT goals directly',
-    'Summary JSON has no dob/home_languages/interests/concerns keys',
-    'access_audit row created by get_shared_summary',
-    'access_audit de-duplicated within an hour',
-    'access_audit has no health content',
-    'Revoke by member works',
-    'list_access_log denied for non-owner'
-  ];
+  
   v_req_name text;
   v_missing_count int := 0;
   v_logged_count int := 0;

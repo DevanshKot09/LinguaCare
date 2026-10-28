@@ -1,7 +1,7 @@
 {
   "id": "adult",
   "version": "1.0.0",
-  "status": "draft",
+  "status": "published",
   "audience": "adult",
   "age_band": "adult",
   "estimated_minutes": 5,

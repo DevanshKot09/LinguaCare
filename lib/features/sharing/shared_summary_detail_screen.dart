@@ -3,17 +3,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/sharing/sharing_providers.dart';
 import '../../domain/sharing/sharing_models.dart';
+import '../../domain/assessments/assessment_providers.dart';
+import '../specialist/specialist_assessments_screen.dart';
 import '../export/export_action_widget.dart';
 import '../export/summary_document.dart';
 
 class SharedSummaryDetailScreen extends ConsumerWidget {
   final String linkId;
   final String childName;
+  final String? childId;
+  final String? subjectUid;
 
   const SharedSummaryDetailScreen({
     super.key,
     required this.linkId,
     required this.childName,
+    this.childId,
+    this.subjectUid,
   });
 
   @override
@@ -65,61 +71,210 @@ class SharedSummaryDetailScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               Text('Active Scope: ${summary.scope.toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () {
-                  final screenings = summary.screeningSessions.map((s) => SummaryScreeningItem(
-                    date: s['created_at']?.toString().split('T').first ?? '',
-                    instrumentVersion: s['instrument_version']?.toString() ?? 'v1',
-                    riskWording: s['risk_level']?.toString() ?? 'Unknown',
-                    domainLevels: [],
-                    alsoCheckFlags: [],
-                    urgentNoticeTriggered: false,
-                    confidence: 'High',
-                    isPrototype: s['instrument_status'] != 'published',
-                  )).toList();
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final screenings = summary.screeningSessions.map((s) => SummaryScreeningItem(
+                          date: s['created_at']?.toString().split('T').first ?? '',
+                          instrumentVersion: s['instrument_version']?.toString() ?? 'v1',
+                          riskWording: s['risk_level']?.toString() ?? 'Unknown',
+                          domainLevels: [],
+                          alsoCheckFlags: [],
+                          urgentNoticeTriggered: false,
+                          confidence: 'High',
+                          isPrototype: s['instrument_status'] != 'published',
+                        )).toList();
 
-                  final practices = summary.activitySessions.map((a) => SummaryPracticeItem(
-                    domain: a['domain']?.toString() ?? 'General',
-                    summaryText: 'Activity practice completed',
-                    durationMinutes: (a['duration_s'] ?? 0) ~/ 60,
-                    supportLevel: a['support_level']?.toString() ?? 'independent',
-                    date: a['date']?.toString() ?? '',
-                  )).toList();
+                        final practices = summary.activitySessions.map((a) => SummaryPracticeItem(
+                          domain: a['domain']?.toString() ?? 'General',
+                          summaryText: 'Activity practice completed',
+                          durationMinutes: (a['duration_s'] ?? 0) ~/ 60,
+                          supportLevel: a['support_level']?.toString() ?? 'independent',
+                          date: a['date']?.toString() ?? '',
+                        )).toList();
 
-                  final goalList = summary.goals.map((g) => SummaryGoalItem(
-                    description: g['description']?.toString() ?? '',
-                    domain: g['domain']?.toString() ?? 'General',
-                    status: g['status']?.toString() ?? 'active',
-                    progress: g['progress'] ?? 0,
-                  )).toList();
+                        final goalList = summary.goals.map((g) => SummaryGoalItem(
+                          description: g['description']?.toString() ?? '',
+                          domain: g['domain']?.toString() ?? 'General',
+                          status: g['status']?.toString() ?? 'active',
+                          progress: g['progress'] ?? 0,
+                        )).toList();
 
-                  final obsList = summary.observations.map((o) => SummaryObservationItem(
-                    note: o['note']?.toString() ?? '',
-                    setting: o['setting']?.toString() ?? 'General',
-                    date: o['created_at']?.toString().split('T').first ?? '',
-                    isPrivate: o['private'] == true,
-                    isOwnObservation: false,
-                  )).toList();
+                        final obsList = summary.observations.map((o) => SummaryObservationItem(
+                          note: o['note']?.toString() ?? '',
+                          setting: o['setting']?.toString() ?? 'General',
+                          date: o['created_at']?.toString().split('T').first ?? '',
+                          isPrivate: o['private'] == true,
+                          isOwnObservation: false,
+                        )).toList();
 
-                  showExportSummaryDialog(
-                    context: context,
-                    role: sessionRole,
-                    scope: summary.scope,
-                    subjectNickname: childName,
-                    subjectAgeBand: '5-11 yrs',
-                    isAccessEnded: false,
-                    screeningSessions: screenings,
-                    practiceItems: practices,
-                    goalItems: goalList,
-                    rawObservations: obsList,
-                  );
-                },
-                icon: const Icon(Icons.picture_as_pdf_rounded),
-                label: const Text('Export Summary PDF'),
+                        showExportSummaryDialog(
+                          context: context,
+                          role: sessionRole,
+                          scope: summary.scope,
+                          subjectNickname: childName,
+                          subjectAgeBand: '5-11 yrs',
+                          isAccessEnded: false,
+                          screeningSessions: screenings,
+                          practiceItems: practices,
+                          goalItems: goalList,
+                          rawObservations: obsList,
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_rounded),
+                      label: const Text('Export Summary PDF'),
+                    ),
+                  ),
+                  if (childId != null) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => SpecialistAssessmentsScreen(
+                              childId: childId,
+                              subjectUid: subjectUid,
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.medical_services_rounded, size: 18),
+                        label: const Text('Assessment'),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
         ),
+        if (childId != null) ...[
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Clinical Assessments & Outcomes',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => SpecialistAssessmentsScreen(
+                      childId: childId,
+                      subjectUid: subjectUid,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.add_circle_outline, size: 18),
+                label: const Text('Record Assessment'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ref.watch(assessmentsProvider(childId)).when(
+            data: (assessments) {
+              if (assessments.isEmpty) {
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'No specialist clinical assessments recorded yet for this client.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => SpecialistAssessmentsScreen(
+                                childId: childId,
+                                subjectUid: subjectUid,
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.assignment_turned_in_outlined, size: 18),
+                          label: const Text('Record Confirmed Outcome'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return Column(
+                children: assessments.map((a) {
+                  final outcomeLabel = a.outcome == 'dld'
+                      ? 'Confirmed Developmental Language Disorder (DLD)'
+                      : a.outcome == 'language_difficulty_other_cause'
+                          ? 'Language Difficulty (Other Cause)'
+                          : a.outcome == 'speech_sound_disorder'
+                              ? 'Speech Sound Disorder Only'
+                              : a.outcome == 'typical'
+                                  ? 'Typical Language Variation'
+                                  : 'Other Clinical Diagnosis';
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  outcomeLabel,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ),
+                              Chip(
+                                label: Text(a.severity?.toUpperCase() ?? 'ASSESSED'),
+                                backgroundColor: a.outcome == 'dld' ? Colors.red.shade100 : Colors.blue.shade100,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Assessed on: ${a.assessedOn.toLocal().toString().split(' ').first} • Hearing: ${a.hearingStatus}',
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          if (a.domainsAffected.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              children: a.domainsAffected.map((d) => Chip(
+                                label: Text(d, style: const TextStyle(fontSize: 11)),
+                                visualDensity: VisualDensity.compact,
+                              )).toList(),
+                            ),
+                          ],
+                          if (a.note != null && a.note!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Clinical Note: ${a.note}',
+                              style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => const SizedBox.shrink(),
+          ),
+        ],
         const SizedBox(height: 24),
         Text('Screening History (${summary.screeningSessions.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),

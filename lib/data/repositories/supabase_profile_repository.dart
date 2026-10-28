@@ -103,6 +103,29 @@ class SupabaseProfileRepository implements ProfileRepository {
         'p_consents': consents,
       });
     } catch (e) {
+      if (e is PostgrestException && e.message.contains('Email verification required')) {
+        try {
+          // Attempt OAuth verification sync and retry
+          await _edgeClient.verifyOtp('GOOGLE_OAUTH');
+          final roleName = switch (role) {
+            UserRole.parent => 'parent',
+            UserRole.teacher => 'teacher',
+            UserRole.adult => 'adult',
+            UserRole.specialist => 'specialist',
+            UserRole.admin => 'admin',
+          };
+          await _supabase.rpc('complete_profile', params: {
+            'p_role': roleName,
+            'p_name': fullName,
+            'p_country': country,
+            'p_language': language,
+            'p_role_details': roleDetails,
+            'p_initial_child': initialChild,
+            'p_consents': consents,
+          });
+          return;
+        } catch (_) {}
+      }
       if (e is PostgrestException) {
         throw UnexpectedAuthFailure(e.message);
       }

@@ -100,7 +100,7 @@ void main() {
     final emailField = tester.widget<TextFormField>(find.byType(TextFormField).at(0));
     expect(emailField.validator!(null), l10n.emailRequired);
     expect(emailField.validator!('invalid'), l10n.invalidEmail);
-    expect(emailField.validator!('<redacted>'), null);
+    expect(emailField.validator!('user@test.com'), null);
 
     final passwordField = tester.widget<TextFormField>(find.byType(TextFormField).at(1));
     expect(passwordField.validator!(''), l10n.passwordRequired);

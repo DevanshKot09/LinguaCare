@@ -72,6 +72,25 @@ serve(async (req) => {
       return errorResponse('Failed to set custom claims', 500, 'CLAIMS_ERROR');
     }
 
+    // If user's email is verified by OAuth (e.g. Google), ensure email_verifications record exists
+    if (user.email_verified && user.email) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (supabaseUrl && supabaseServiceKey) {
+        try {
+          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.8');
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          await supabase.from('email_verifications').upsert({
+            uid: user.uid,
+            email: user.email,
+            verified_at: new Date().toISOString(),
+          }, { onConflict: 'uid' });
+        } catch (dbErr) {
+          console.error('Auto email_verifications sync error:', dbErr);
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: 'Custom claims set successfully' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

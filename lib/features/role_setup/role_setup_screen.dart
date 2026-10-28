@@ -4,61 +4,121 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_colors.dart';
 
+import '../../data/repositories/firebase_auth_repository.dart';
+
 class RoleSetupScreen extends ConsumerWidget {
   const RoleSetupScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Choose Your Role'),
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: ListView(
-              padding: const EdgeInsets.all(24.0),
-              children: [
-                const Text(
-                  'Select how you will use LinguaCare. Note: Your role cannot be changed after setup.',
-                  style: TextStyle(fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                _RoleCard(
-                  title: 'Parent / Caregiver',
-                  description: 'Manage child profiles, run screenings, and practice daily activities.',
-                  icon: Icons.family_restroom_rounded,
-                  color: AppColors.parentAccent,
-                  onTap: () => context.push('/role-setup/form?role=parent'),
-                ),
-                const SizedBox(height: 16),
-                _RoleCard(
-                  title: 'Educator / Teacher',
-                  description: 'Access strategies, record observations, and support students.',
-                  icon: Icons.school_rounded,
-                  color: AppColors.teacherAccent,
-                  onTap: () => context.push('/role-setup/form?role=teacher'),
-                ),
-                const SizedBox(height: 16),
-                _RoleCard(
-                  title: 'Adult (18+)',
-                  description: 'Self-reflection, communication card, journal, and personal tools.',
-                  icon: Icons.person_rounded,
-                  color: AppColors.adultAccent,
-                  onTap: () => context.push('/role-setup/form?role=adult'),
-                ),
-                const SizedBox(height: 16),
-                _RoleCard(
-                  title: 'Specialist (SLP)',
-                  description: 'Manage caseload, set goals, and enter confirmed clinical outcomes.',
-                  icon: Icons.medical_services_rounded,
-                  color: AppColors.specialistAccent,
-                  onTap: () => context.push('/role-setup/form?role=specialist'),
-                ),
-              ],
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, _) async {
+        if (!didPop) {
+          await ref.read(authRepositoryProvider).signOut();
+          if (context.mounted) {
+            context.go('/welcome');
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Choose Your Role',
+            style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Quicksand'),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: 'Back',
+            onPressed: () async {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) {
+                  context.go('/welcome');
+                }
+              }
+            },
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout_rounded),
+              tooltip: 'Sign Out',
+              onPressed: () async {
+                await ref.read(authRepositoryProvider).signOut();
+                if (context.mounted) context.go('/welcome');
+              },
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5B32E8).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF5B32E8).withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline_rounded, color: Color(0xFF5B32E8)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Select how you will use LinguaCare. Each role gets a customized workspace.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _RoleCard(
+                    title: 'Parent / Caregiver',
+                    description: 'Manage child profiles, run language screenings, and practice fun daily activities.',
+                    icon: Icons.family_restroom_rounded,
+                    color: AppColors.parentAccent,
+                    onTap: () => context.push('/role-setup/form?role=parent'),
+                  ),
+                  const SizedBox(height: 14),
+                  _RoleCard(
+                    title: 'Educator / Teacher',
+                    description: 'Access classroom strategies, record observations, and support student accommodations.',
+                    icon: Icons.school_rounded,
+                    color: AppColors.teacherAccent,
+                    onTap: () => context.push('/role-setup/form?role=teacher'),
+                  ),
+                  const SizedBox(height: 14),
+                  _RoleCard(
+                    title: 'Adult (18+)',
+                    description: 'Self-reflection, digital communication-needs cards, confidence tools, and workplace coping.',
+                    icon: Icons.person_rounded,
+                    color: AppColors.adultAccent,
+                    onTap: () => context.push('/role-setup/form?role=adult'),
+                  ),
+                  const SizedBox(height: 14),
+                  _RoleCard(
+                    title: 'Specialist (SLP)',
+                    description: 'Caseload management, clinical support goals, outcome reviews, and specialist consultations.',
+                    icon: Icons.medical_services_rounded,
+                    color: AppColors.specialistAccent,
+                    onTap: () => context.push('/role-setup/form?role=specialist'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

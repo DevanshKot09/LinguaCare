@@ -13,6 +13,7 @@ class SummaryBuilder {
     required List<SummaryPracticeItem> practiceSummary,
     required List<SummaryGoalItem> goalItems,
     required List<SummaryObservationItem> rawObservations,
+    List<SummaryAssessmentItem> clinicalAssessments = const [],
   }) {
     if (isAccessEnded) {
       return SummaryDocument(
@@ -27,6 +28,7 @@ class SummaryBuilder {
         practiceSummary: const [],
         goals: const [],
         observations: const [],
+        clinicalAssessments: const [],
         includeNotes: false,
         isAccessEnded: true,
         isEmptyDataset: false,
@@ -129,7 +131,15 @@ class SummaryBuilder {
       }
     }
 
-    final isEmptyDataset = filteredScreenings.isEmpty && filteredPractices.isEmpty && filteredGoals.isEmpty && filteredObservations.isEmpty;
+    final filteredAssessments = clinicalAssessments.map((a) => SummaryAssessmentItem(
+      outcome: TextSanitizer.sanitize(a.outcome),
+      severity: TextSanitizer.sanitize(a.severity),
+      date: TextSanitizer.sanitize(a.date),
+      domainsAffected: a.domainsAffected.map((d) => TextSanitizer.sanitize(d)).toList(),
+      note: a.note != null ? TextSanitizer.sanitize(a.note!) : null,
+    )).toList();
+
+    final isEmptyDataset = filteredScreenings.isEmpty && filteredPractices.isEmpty && filteredGoals.isEmpty && filteredObservations.isEmpty && filteredAssessments.isEmpty;
     final hasPrototype = filteredScreenings.any((s) => s.isPrototype);
 
     return SummaryDocument(
@@ -144,6 +154,7 @@ class SummaryBuilder {
       practiceSummary: filteredPractices,
       goals: filteredGoals,
       observations: filteredObservations,
+      clinicalAssessments: filteredAssessments,
       includeNotes: effectiveIncludeNotes,
       isAccessEnded: false,
       isEmptyDataset: isEmptyDataset,

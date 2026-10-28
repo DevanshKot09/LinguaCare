@@ -9,13 +9,24 @@ import '../../core/responsive/responsive_scaffold.dart';
 import '../../l10n/app_localizations.dart';
 import '../../domain/sharing/sharing_providers.dart';
 import '../../domain/observations/observation.dart';
-import '../../data/repositories/content_repository_impl.dart';
-import '../learn/learn_home_screen.dart';
-import '../learn/article_reader_screen.dart';
 import '../sharing/sharing_management_view.dart';
 import '../sharing/accept_invite_screen.dart';
 import '../tools/visual_schedule_screen.dart';
 import '../tools/instruction_simplifier_screen.dart';
+
+class _StrategyItem {
+  final String slug;
+  final String title;
+  final String summary;
+  const _StrategyItem(this.slug, this.title, this.summary);
+}
+
+final _strategies = [
+  const _StrategyItem('visual_schedule', 'Visual Schedules', 'Use picture or icon schedules to support multi-step instructions and transitions.'),
+  const _StrategyItem('processing_time', 'Extra Processing Time', 'Allow 5-10 seconds of silent wait time after asking a question before expecting a response.'),
+  const _StrategyItem('chunking', 'Chunk Instructions', 'Break complex multi-step instructions into single, bite-sized actionable steps.'),
+  const _StrategyItem('multimodal', 'Multimodal Support', 'Combine spoken language with gestures, written keywords, and visual props.'),
+];
 
 class TeacherHomeScreen extends ConsumerStatefulWidget {
   const TeacherHomeScreen({super.key});
@@ -38,10 +49,9 @@ class _TeacherHomeScreenState extends ConsumerState<TeacherHomeScreen> {
       ResponsiveScaffoldItem(label: l10n.tabStudents, icon: Icons.school_rounded),
       ResponsiveScaffoldItem(label: l10n.tabStrategies, icon: Icons.lightbulb_rounded),
       ResponsiveScaffoldItem(label: l10n.tabObservations, icon: Icons.visibility_rounded),
-      ResponsiveScaffoldItem(label: l10n.tabLearn, icon: Icons.menu_book_rounded),
     ];
 
-    final tabTitles = [l10n.tabHome, l10n.tabStudents, l10n.tabStrategies, l10n.tabObservations, l10n.tabLearn];
+    final tabTitles = [l10n.tabHome, l10n.tabStudents, l10n.tabStrategies, l10n.tabObservations];
 
     Widget bodyWidget;
     switch (_currentIndex) {
@@ -57,11 +67,8 @@ class _TeacherHomeScreenState extends ConsumerState<TeacherHomeScreen> {
         bodyWidget = const TeacherStrategiesTab();
         break;
       case 3:
-        bodyWidget = const TeacherObservationsTab();
-        break;
-      case 4:
       default:
-        bodyWidget = const LearnHomeScreen();
+        bodyWidget = const TeacherObservationsTab();
         break;
     }
 
@@ -319,7 +326,7 @@ class _TeacherStrategiesTabState extends ConsumerState<TeacherStrategiesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final contentAsync = ref.watch(contentListProvider((role: UserRole.teacher, topic: 'F', query: _searchQuery)));
+    final filtered = _strategies.where((s) => s.title.toLowerCase().contains(_searchQuery.toLowerCase()) || s.summary.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
 
     return ListView(
       padding: const EdgeInsets.all(24.0),
@@ -374,43 +381,25 @@ class _TeacherStrategiesTabState extends ConsumerState<TeacherStrategiesTab> {
         const SizedBox(height: 8),
         Text('Strategies marked: ${_checklistSlugs.length}', style: const TextStyle(color: Colors.grey)),
         const SizedBox(height: 16),
-        contentAsync.when(
-          data: (items) {
-            if (items.isEmpty) {
-              return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No classroom strategies found.')));
-            }
-            return Column(
-              children: items.map((item) {
-                final isChecked = _checklistSlugs.contains(item.slug);
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: CheckboxListTile(
-                    title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(item.summary, maxLines: 2, overflow: TextOverflow.ellipsis),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => ArticleReaderScreen(slug: item.slug)),
-                          ),
-                          child: const Text('Read Full Article'),
-                        ),
-                      ],
+        filtered.isEmpty
+            ? const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No classroom strategies found.')))
+            : Column(
+                children: filtered.map((item) {
+                  final isChecked = _checklistSlugs.contains(item.slug);
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: CheckboxListTile(
+                      title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(item.summary, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ),
+                      value: isChecked,
+                      onChanged: (val) => _toggleChecklist(item.slug),
                     ),
-                    value: isChecked,
-                    onChanged: (val) => _toggleChecklist(item.slug),
-                  ),
-                );
-              }).toList(),
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Error loading strategies: $e'),
-        ),
+                  );
+                }).toList(),
+              ),
       ],
     );
   }
@@ -501,6 +490,49 @@ class _TeacherObservationsTabState extends ConsumerState<TeacherObservationsTab>
                   ],
                   const Text('Please avoid full names, addresses or phone numbers', style: TextStyle(fontSize: 12, color: Colors.blue, fontStyle: FontStyle.italic)),
                   const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      ActionChip(
+                        label: const Text('Chunked instructions needed', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _noteController.text = 'Student needed directions broken into one step at a time.';
+                            _selectedTag = 'listening';
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        label: const Text('Visual cue helped', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _noteController.text = 'Student responded accurately after visual card was shown.';
+                            _selectedTag = 'attention';
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        label: const Text('Word-finding hesitation', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _noteController.text = 'Student hesitated on specific vocabulary term during class.';
+                            _selectedTag = 'vocabulary';
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        label: const Text('Good peer interaction', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _noteController.text = 'Student participated comfortably in small group discussion.';
+                            _selectedTag = 'social';
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: _noteController,
                     decoration: const InputDecoration(

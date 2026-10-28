@@ -8,7 +8,7 @@ import '../../core/responsive/responsive_scaffold.dart';
 import '../../l10n/app_localizations.dart';
 import '../../domain/sharing/sharing_providers.dart';
 import '../../domain/goals/goal.dart';
-import '../learn/learn_home_screen.dart';
+import '../tools/tools_hub_screen.dart';
 import '../sharing/sharing_management_view.dart';
 import '../sharing/accept_invite_screen.dart';
 
@@ -57,7 +57,7 @@ class _SpecialistHomeScreenState extends ConsumerState<SpecialistHomeScreen> {
         break;
       case 3:
       default:
-        bodyContent = const LearnHomeScreen();
+        bodyContent = const ToolsHubScreen();
         break;
     }
 
@@ -349,7 +349,52 @@ class _SpecialistPlansTabState extends ConsumerState<SpecialistPlansTab> {
                     ],
                     onChanged: (v) => setStateDialog(() => _domain = v ?? 'vocabulary'),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  const Text('Quick Goal Templates:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      ActionChip(
+                        label: const Text('2-step prepositions', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _domain = 'understanding';
+                            _descController.text = 'Follow two-step verbal directions containing prepositions (in, on, under) with 80% accuracy.';
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        label: const Text('Past-tense recasting', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _domain = 'grammar';
+                            _descController.text = 'Produce regular and irregular past-tense verbs in conversational sentences with verbal recasting.';
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        label: const Text('Core vocabulary naming', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _domain = 'vocabulary';
+                            _descController.text = 'Name 10 tier-2 academic and school vocabulary items without prompts across 3 consecutive sessions.';
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        label: const Text('3-part narrative recall', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          setStateDialog(() {
+                            _domain = 'narrative';
+                            _descController.text = 'Retell a simple 3-part story sequence with beginning, middle, and end using visual prompt cards.';
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _descController,
                     decoration: const InputDecoration(labelText: 'Goal Description (max 300 chars)', border: OutlineInputBorder()),

@@ -6,11 +6,11 @@ import '../../app/router/app_session.dart';
 import '../../app/theme/app_colors.dart';
 import '../../core/responsive/responsive_scaffold.dart';
 import '../../l10n/app_localizations.dart';
-import '../learn/learn_home_screen.dart';
 import '../activities/activities_home_screen.dart';
 import '../tools/tools_hub_screen.dart';
 import '../tools/adult_journal_screen.dart';
 import '../tools/communication_card_screen.dart';
+import '../tools/instruction_simplifier_screen.dart';
 import '../settings/about_screen.dart';
 import '../settings/privacy_policy_screen.dart';
 import '../export/export_action_widget.dart';
@@ -30,30 +30,34 @@ class _AdultHomeScreenState extends ConsumerState<AdultHomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(appSessionStateProvider);
     final profile = session.profile;
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    String userId = session.user?.uid ?? profile?.uid ?? '';
+    if (userId.isEmpty) {
+      try {
+        userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      } catch (_) {
+        userId = '';
+      }
+    }
 
     final items = [
       ResponsiveScaffoldItem(label: l10n.tabHome, icon: Icons.home_rounded),
       ResponsiveScaffoldItem(label: l10n.tabPractise, icon: Icons.sports_esports_rounded),
-      ResponsiveScaffoldItem(label: l10n.tabLearn, icon: Icons.menu_book_rounded),
       ResponsiveScaffoldItem(label: l10n.tabJournal, icon: Icons.book_rounded),
       ResponsiveScaffoldItem(label: l10n.tabMe, icon: Icons.person_rounded),
     ];
 
-    final tabTitles = [l10n.tabHome, l10n.tabPractise, l10n.tabLearn, l10n.tabJournal, l10n.tabMe];
+    final tabTitles = [l10n.tabHome, l10n.tabPractise, l10n.tabJournal, l10n.tabMe];
 
     Widget bodyWidget;
-    if (_currentIndex == 2) {
-      bodyWidget = const LearnHomeScreen();
-    } else if (_currentIndex == 1) {
+    if (_currentIndex == 1) {
       bodyWidget = ActivitiesHomeScreen(
         subjectUid: userId,
         ageBand: 'adult',
         audience: 'adult',
       );
-    } else if (_currentIndex == 3) {
+    } else if (_currentIndex == 2) {
       bodyWidget = const AdultJournalScreen();
-    } else if (_currentIndex == 4) {
+    } else if (_currentIndex == 3) {
       bodyWidget = ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -188,6 +192,70 @@ class _AdultHomeScreenState extends ConsumerState<AdultHomeScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructionSimplifierScreen())),
+                  icon: const Icon(Icons.format_list_numbered_rounded),
+                  label: const Text('Simplifier'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() => _currentIndex = 1),
+                  icon: const Icon(Icons.sports_esports_rounded),
+                  label: const Text('Practise'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Card(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.adultAccent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.favorite_rounded, color: AppColors.adultAccent, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Daily Self-Advocacy Check-In',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'How did communication feel today at work, appointments, or with friends? Log reflections safely on your device.',
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() => _currentIndex = 2),
+                      icon: const Icon(Icons.edit_note_rounded),
+                      label: const Text('Open Journal'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       );

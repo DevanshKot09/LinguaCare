@@ -1,7 +1,7 @@
 {
   "id": "scenario_friends_5_11",
   "version": 1,
-  "status": "draft",
+  "status": "published",
   "title": "Joining a Game",
   "domain": "conversation",
   "type": "scenario_choice",

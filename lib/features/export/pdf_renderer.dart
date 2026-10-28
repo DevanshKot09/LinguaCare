@@ -102,6 +102,49 @@ class PdfRenderer {
             pw.SizedBox(height: 16),
           ],
 
+          // Specialist Clinical Diagnoses & Confirmed Outcomes
+          if (doc.clinicalAssessments.isNotEmpty) ...[
+            pw.Text('Specialist Clinical Diagnoses & Outcomes (${doc.clinicalAssessments.length})', style: pw.TextStyle(font: fontBold, fontSize: 14)),
+            pw.SizedBox(height: 8),
+            ...doc.clinicalAssessments.map((a) => pw.Container(
+                  margin: const pw.EdgeInsets.only(bottom: 8),
+                  padding: const pw.EdgeInsets.all(10),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                    border: pw.Border.all(color: PdfColors.grey500),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(
+                            a.outcome == 'dld'
+                                ? 'Confirmed Developmental Language Disorder (DLD) [ICD-11 6A01.2]'
+                                : 'Clinical Outcome: ${a.outcome.toUpperCase()}',
+                            style: pw.TextStyle(font: fontBold, fontSize: 11, color: a.outcome == 'dld' ? PdfColors.red900 : PdfColors.blue900),
+                          ),
+                          pw.Text(a.date, style: pw.TextStyle(font: fontRegular, fontSize: 10)),
+                        ],
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text('Severity: ${a.severity.toUpperCase()}', style: pw.TextStyle(font: fontBold, fontSize: 10)),
+                      if (a.domainsAffected.isNotEmpty) ...[
+                        pw.SizedBox(height: 3),
+                        pw.Text('Domains Affected: ${a.domainsAffected.join(", ")}', style: pw.TextStyle(font: fontRegular, fontSize: 10)),
+                      ],
+                      if (a.note != null && a.note!.isNotEmpty) ...[
+                        pw.SizedBox(height: 4),
+                        pw.Text('Clinical Notes: ${a.note}', style: pw.TextStyle(font: fontRegular, fontSize: 10, color: PdfColors.grey800)),
+                      ],
+                    ],
+                  ),
+                )),
+            pw.SizedBox(height: 16),
+          ],
+
           // Screening Results
           if (doc.screeningResults.isNotEmpty) ...[
             pw.Text('Screening Results (${doc.screeningResults.length})', style: pw.TextStyle(font: fontBold, fontSize: 14)),

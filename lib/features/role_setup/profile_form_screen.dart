@@ -10,13 +10,15 @@ import '../auth/widgets/app_text_field.dart';
 import '../auth/widgets/auth_scaffold.dart';
 import '../auth/widgets/inline_error.dart';
 import '../auth/widgets/primary_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../settings/privacy_policy_screen.dart';
 import '../settings/terms_of_service_screen.dart';
 
 class ProfileFormScreen extends ConsumerStatefulWidget {
   final String roleStr;
+  final String? initialName;
 
-  const ProfileFormScreen({super.key, required this.roleStr});
+  const ProfileFormScreen({super.key, required this.roleStr, this.initialName});
 
   @override
   ConsumerState<ProfileFormScreen> createState() => _ProfileFormScreenState();
@@ -25,7 +27,24 @@ class ProfileFormScreen extends ConsumerStatefulWidget {
 class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _countryController = TextEditingController(text: 'United States');
+  final _countryController = TextEditingController(text: 'India');
+  String _selectedCountry = 'India';
+
+  static const List<String> _countries = [
+    'India',
+    'United States',
+    'United Kingdom',
+    'Canada',
+    'Australia',
+    'United Arab Emirates',
+    'Singapore',
+    'New Zealand',
+    'Germany',
+    'France',
+    'Ireland',
+    'South Africa',
+    'Other',
+  ];
 
   late final TapGestureRecognizer _termsRecognizer;
   late final TapGestureRecognizer _privacyRecognizer;
@@ -63,6 +82,11 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialName != null && widget.initialName!.isNotEmpty) {
+      _nameController.text = widget.initialName!;
+    } else {
+      _loadPendingName();
+    }
     _termsRecognizer = TapGestureRecognizer()
       ..onTap = () {
         Navigator.push(
@@ -77,6 +101,18 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
           MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
         );
       };
+  }
+
+  Future<void> _loadPendingName() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('pending_name');
+      if (saved != null && saved.isNotEmpty && mounted && _nameController.text.isEmpty) {
+        setState(() {
+          _nameController.text = saved;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -242,13 +278,45 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
               prefixIcon: Icons.person_rounded,
               validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
             ),
-            const SizedBox(height: 16),
-            AppTextField(
-              controller: _countryController,
-              label: 'Country',
-              prefixIcon: Icons.public_rounded,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Country is required' : null,
+            // Country Dropdown Selector
+            DropdownButtonFormField<String>(
+              initialValue: _countries.contains(_selectedCountry) ? _selectedCountry : 'Other',
+              decoration: InputDecoration(
+                labelText: 'Country',
+                prefixIcon: const Icon(Icons.public_rounded),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+              items: _countries.map((c) {
+                return DropdownMenuItem<String>(
+                  value: c,
+                  child: Text(c),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedCountry = val;
+                    if (val != 'Other') {
+                      _countryController.text = val;
+                    } else {
+                      _countryController.text = '';
+                    }
+                  });
+                }
+              },
             ),
+            if (_selectedCountry == 'Other') ...[
+              const SizedBox(height: 12),
+              AppTextField(
+                controller: _countryController,
+                label: 'Enter your country name',
+                prefixIcon: Icons.flag_rounded,
+                validator: (v) => v == null || v.trim().isEmpty ? 'Country is required' : null,
+              ),
+            ],
             const SizedBox(height: 24),
             if (_role == UserRole.specialist) ...[
               const Text('Specialist Credentials', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

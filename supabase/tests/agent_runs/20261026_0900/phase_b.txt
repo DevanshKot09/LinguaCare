@@ -1,0 +1,16 @@
+HARNESS SELF-TEST: OK
+TEST RESULTS: 11 passed, 0 failed
+PASS: POSITIVE CONTROL - Owner can read own consent history
+PASS: Consent rows cannot be UPDATED by owner
+PASS: Consent rows cannot be DELETED by owner
+PASS: Consent withdrawal appends a new row
+PASS: Latest consent row decides current status
+PASS: Another user cannot withdraw my consent
+PASS: Specialist licence change resets verified
+PASS: Specialist non-licence update keeps verified
+PASS: Owner role can still set verified for admin approval
+PASS: generate_invite_code not executable by authenticated
+PASS: preview_invite and accept_invite take an advisory lock
+MANIFEST: 11 expected, 11 logged, 0 missing
+TOTAL real tests logged (excluding canary): 11
+VACUOUS-RISK CHECK: OK

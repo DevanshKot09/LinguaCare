@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/router/app_session.dart';
 import '../../data/repositories/firebase_auth_repository.dart';
 import '../../domain/auth/auth_failure.dart';
@@ -23,6 +24,7 @@ class SignUpScreen extends ConsumerStatefulWidget {
 
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
@@ -30,6 +32,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   late final TapGestureRecognizer _termsRecognizer;
   late final TapGestureRecognizer _privacyRecognizer;
 
+  String _selectedRole = 'parent';
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _agreedToTerms = false;
@@ -59,6 +62,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   void dispose() {
     _termsRecognizer.dispose();
     _privacyRecognizer.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -87,13 +91,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_name', _nameController.text.trim());
+      await prefs.setString('pending_role', _selectedRole);
+
       final authRepo = ref.read(authRepositoryProvider);
       await authRepo.signUpWithEmail(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
       if (!mounted) return;
-      context.go('/verify-email');
+      try {
+        context.go('/verify-email');
+      } catch (_) {}
     } on AuthFailure catch (e) {
       setState(() {
         _errorMessage = e.message;
@@ -125,6 +135,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_name', _nameController.text.trim());
+      await prefs.setString('pending_role', _selectedRole);
+
       final authRepo = ref.read(authRepositoryProvider);
       await authRepo.signInWithGoogle();
       if (!mounted) return;
@@ -148,9 +162,67 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
+  Widget _buildRoleChip({
+    required String role,
+    required String label,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isSelected = _selectedRole == role;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedRole = role),
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withValues(alpha: 0.12) : Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? color : Theme.of(context).dividerColor.withValues(alpha: 0.25),
+              width: isSelected ? 2 : 1.2,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: isSelected ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                    fontFamily: 'Quicksand',
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return AuthScaffold(
       title: l10n.signUp,
       child: Form(
@@ -159,6 +231,83 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             InlineError(message: _errorMessage),
+
+            // Friendly subtext
+            Text(
+              'Join LinguaCare for personalized speech & language therapy support.',
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Role selector
+            Text(
+              'I am joining as:',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Quicksand',
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildRoleChip(
+                  role: 'parent',
+                  label: 'Parent',
+                  icon: Icons.family_restroom_rounded,
+                  color: const Color(0xFF5B32E8),
+                ),
+                const SizedBox(width: 8),
+                _buildRoleChip(
+                  role: 'teacher',
+                  label: 'Teacher',
+                  icon: Icons.school_rounded,
+                  color: const Color(0xFF00C4B4),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildRoleChip(
+                  role: 'adult',
+                  label: 'Adult (18+)',
+                  icon: Icons.person_rounded,
+                  color: const Color(0xFFFF9800),
+                ),
+                const SizedBox(width: 8),
+                _buildRoleChip(
+                  role: 'specialist',
+                  label: 'Specialist',
+                  icon: Icons.medical_services_rounded,
+                  color: const Color(0xFFE91E63),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            // Name field
+            TextField(
+              controller: _nameController,
+              textInputAction: TextInputAction.next,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: 'Full Name',
+                hintText: 'e.g. Alex Morgan',
+                prefixIcon: const Icon(Icons.person_outline_rounded),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Email field
             AppTextField(
               controller: _emailController,
               label: l10n.email,
@@ -201,7 +350,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             const SizedBox(height: 6),
             Text(
               l10n.passwordRequirements,
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
             ),
             const SizedBox(height: 16),
             AppTextField(
@@ -248,13 +397,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           text: 'I agree to the ',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: theme.colorScheme.onSurface,
                           ),
                           children: [
                             TextSpan(
                               text: 'Terms of Service',
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
+                                color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.bold,
                                 decoration: TextDecoration.underline,
                               ),
@@ -264,7 +413,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             TextSpan(
                               text: 'Privacy Policy',
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
+                                color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.bold,
                                 decoration: TextDecoration.underline,
                               ),
@@ -291,7 +440,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 const Expanded(child: Divider()),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(l10n.orDivider, style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+                  child: Text(l10n.orDivider, style: TextStyle(color: theme.colorScheme.outline)),
                 ),
                 const Expanded(child: Divider()),
               ],

@@ -26,6 +26,12 @@ import '../../features/screening/screening_history_screen.dart';
 import '../../features/tools/tools_hub_screen.dart';
 import '../../features/export/export_summary_screen.dart';
 import '../../features/admin/admin_home_screen.dart';
+import '../../features/specialist/specialist_directory_screen.dart';
+import '../../features/activities/cartoon_memory_game_screen.dart';
+import '../../features/activities/animal_spotter_game_screen.dart';
+import '../../features/activities/sentence_reconstruction_screen.dart';
+import '../../features/activities/custom_activity_builder_screen.dart';
+import '../../features/activities/progress_dashboard_screen.dart';
 import '../../core/widgets/not_found_screen.dart';
 import 'app_session.dart';
 
@@ -43,10 +49,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (session.status == AuthSessionStatus.loading || session.status == AuthSessionStatus.error) {
         if (path != '/splash') target = '/splash';
+      } else if (path == '/splash') {
+        // Allow SplashScreen to display its smooth animation before navigating
+        target = null;
       } else if (session.isFirstLaunch && !session.onboardingDone) {
         if (path != '/onboarding') target = '/onboarding';
       } else if (session.status == AuthSessionStatus.unauthenticated) {
-        const publicAuthPaths = ['/welcome', '/login', '/sign-up', '/forgot-password', '/onboarding', '/privacy-policy', '/terms-of-service'];
+        const publicAuthPaths = ['/welcome', '/login', '/sign-up', '/forgot-password', '/onboarding', '/privacy-policy', '/terms-of-service', '/splash'];
         if (!publicAuthPaths.contains(path)) {
           target = '/welcome';
         }
@@ -63,7 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           UserRole.admin => '/admin',
         };
 
-        const authPaths = ['/splash', '/onboarding', '/welcome', '/login', '/sign-up', '/verify-email', '/forgot-password'];
+        const authPaths = ['/onboarding', '/welcome', '/login', '/sign-up', '/verify-email', '/forgot-password'];
         if (authPaths.any((p) => path.startsWith(p)) || path == '/role-setup') {
           target = targetRoleHome;
         }
@@ -93,7 +102,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/role-setup/form',
         builder: (context, state) {
           final role = state.uri.queryParameters['role'] ?? 'parent';
-          return ProfileFormScreen(roleStr: role);
+          final name = state.uri.queryParameters['name'];
+          return ProfileFormScreen(roleStr: role, initialName: name);
         },
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
@@ -146,6 +156,66 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(path: '/export', builder: (context, state) => const ExportSummaryScreen()),
+      GoRoute(path: '/specialist-directory', builder: (context, state) => const SpecialistDirectoryScreen()),
+      GoRoute(
+        path: '/games/cartoon-memory',
+        builder: (context, state) {
+          final nickname = state.uri.queryParameters['nickname'];
+          final childId = state.uri.queryParameters['childId'];
+          final subjectUid = state.uri.queryParameters['subjectUid'];
+          return CartoonMemoryGameScreen(
+            childNickname: nickname,
+            childId: childId,
+            subjectUid: subjectUid,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/games/animal-spotter',
+        builder: (context, state) {
+          final nickname = state.uri.queryParameters['nickname'];
+          final childId = state.uri.queryParameters['childId'];
+          final subjectUid = state.uri.queryParameters['subjectUid'];
+          return AnimalSpotterGameScreen(
+            childNickname: nickname,
+            childId: childId,
+            subjectUid: subjectUid,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/games/sentence-reconstruction',
+        builder: (context, state) {
+          final student = state.uri.queryParameters['student'];
+          final childId = state.uri.queryParameters['childId'];
+          final subjectUid = state.uri.queryParameters['subjectUid'];
+          return SentenceReconstructionScreen(
+            studentName: student,
+            childId: childId,
+            subjectUid: subjectUid,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/builder/custom-activity',
+        builder: (context, state) {
+          final role = state.uri.queryParameters['role'] ?? 'parent';
+          return CustomActivityBuilderScreen(role: role);
+        },
+      ),
+      GoRoute(
+        path: '/activities/progress',
+        builder: (context, state) {
+          final childId = state.uri.queryParameters['childId'];
+          final subjectUid = state.uri.queryParameters['subjectUid'];
+          final title = state.uri.queryParameters['title'] ?? 'Practice Progress';
+          return ProgressDashboardScreen(
+            childId: childId,
+            subjectUid: subjectUid,
+            title: title,
+          );
+        },
+      ),
     ],
   );
 });

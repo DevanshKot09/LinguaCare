@@ -1,0 +1,27 @@
+[rls_checks_step3]
+POSITIVE CONTROL - Parent can submit bug report
+Bug report limited to 5 per day
+Bug report rejects phone number
+Bug report rejects over 1000 characters
+Bug report category must be in allowed list
+Reporter cannot read other user bug reports
+Admin can list bug reports
+Non-admin cannot list bug reports
+Admin can set bug report status
+anon cannot submit bug report
+POSITIVE CONTROL - User lists own notifications
+User cannot read another user's notifications
+Mark notifications read only affects own
+Unread count counts only own unread
+Link acceptance notifies the family without personal names
+Link revocation notifies the other party
+Notification payload has no health content
+Admin approval notifies the specialist
+Admin can list pending specialists
+Non-admin cannot list pending specialists
+Pending specialists list has licence fields only
+Admin audit feed has no health content
+Admin audit feed denied for non-admin
+anon cannot call admin RPCs
+Notifications cannot be inserted by clients
+Cascade delete removes bug reports and notifications
