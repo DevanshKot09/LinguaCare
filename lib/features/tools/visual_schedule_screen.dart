@@ -796,8 +796,11 @@ class _ScheduleEditorScreenState extends State<_ScheduleEditorScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _steps.length,
-              onReorderItem: (oldIndex, newIndex) {
+              onReorder: (oldIndex, newIndex) {
                 setState(() {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
                   final item = _steps.removeAt(oldIndex);
                   _steps.insert(newIndex, item);
                 });
