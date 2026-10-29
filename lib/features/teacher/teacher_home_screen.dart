@@ -86,6 +86,7 @@ class _TeacherHomeScreenState extends ConsumerState<TeacherHomeScreen> {
         if (_currentIndex != 4)
           IconButton(
             icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
             onPressed: () => context.go('/settings'),
           ),
       ],

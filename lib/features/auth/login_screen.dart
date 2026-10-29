@@ -134,6 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               prefixIcon: Icons.lock_rounded,
               suffixIcon: IconButton(
                 icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               ),
               validator: (value) {

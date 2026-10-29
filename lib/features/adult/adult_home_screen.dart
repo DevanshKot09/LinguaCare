@@ -291,6 +291,7 @@ class _AdultHomeScreenState extends ConsumerState<AdultHomeScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.settings),
+          tooltip: 'Settings',
           onPressed: () => context.go('/settings'),
         ),
       ],
