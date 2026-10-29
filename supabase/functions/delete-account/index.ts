@@ -84,6 +84,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
-    return errorResponse((err as Error).message, 401, 'UNAUTHORIZED');
+    console.error('Unhandled error in delete-account:', err);
+    const msg = (err as Error).message || '';
+    if (msg.includes('Missing or invalid Authorization header') || msg.includes('Invalid or expired authentication token')) {
+      return errorResponse(msg, 401, 'UNAUTHORIZED');
+    }
+    return errorResponse('An error occurred processing the request', 401, 'UNAUTHORIZED');
   }
 });

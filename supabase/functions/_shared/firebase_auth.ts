@@ -33,6 +33,8 @@ export async function verifyFirebaseToken(authHeader: string | null): Promise<Fi
       email_verified: payload.email_verified as boolean | undefined,
     };
   } catch (err) {
-    throw new Error(`Invalid Firebase token: ${(err as Error).message}`);
+    // Log internal JWT error on server side and avoid leaking details to client
+    console.error('Firebase token verification error:', err);
+    throw new Error('Invalid or expired authentication token');
   }
 }
