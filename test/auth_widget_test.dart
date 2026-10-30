@@ -7,6 +7,8 @@ import 'package:linguacare/app/router/app_session.dart';
 import 'package:linguacare/data/repositories/firebase_auth_repository.dart';
 import 'package:linguacare/domain/auth/auth_repository.dart';
 import 'package:linguacare/domain/auth/auth_user.dart';
+import 'package:linguacare/features/auth/forgot_password_screen.dart';
+import 'package:linguacare/features/auth/login_screen.dart';
 import 'package:linguacare/features/auth/sign_up_screen.dart';
 import 'package:linguacare/features/auth/verify_email_screen.dart';
 import 'package:linguacare/l10n/app_localizations.dart';
@@ -100,6 +102,9 @@ void main() {
     final emailField = tester.widget<TextFormField>(find.byType(TextFormField).at(0));
     expect(emailField.validator!(null), l10n.emailRequired);
     expect(emailField.validator!('invalid'), l10n.invalidEmail);
+    expect(emailField.validator!('user@'), l10n.invalidEmail);
+    expect(emailField.validator!('@domain.com'), l10n.invalidEmail);
+    expect(emailField.validator!('user@domain'), l10n.invalidEmail);
     expect(emailField.validator!('user@test.com'), null);
 
     final passwordField = tester.widget<TextFormField>(find.byType(TextFormField).at(1));
@@ -110,6 +115,58 @@ void main() {
     final confirmField = tester.widget<TextFormField>(find.byType(TextFormField).at(2));
     expect(confirmField.validator!(null), isNotNull);
     expect(confirmField.validator!(''), isNotNull);
+  });
+
+  testWidgets('Login and ForgotPassword screen email validation', (WidgetTester tester) async {
+    final fakeRepo = FakeAuthRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(fakeRepo)],
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [Locale('en', '')],
+          home: LoginScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final loginContext = tester.element(find.byType(LoginScreen));
+    final l10n = AppLocalizations.of(loginContext)!;
+
+    final loginEmailField = tester.widget<TextFormField>(find.byType(TextFormField).at(0));
+    expect(loginEmailField.validator!(null), l10n.emailRequired);
+    expect(loginEmailField.validator!('invalid'), l10n.invalidEmail);
+    expect(loginEmailField.validator!('user@domain'), l10n.invalidEmail);
+    expect(loginEmailField.validator!('user@test.com'), null);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authRepositoryProvider.overrideWithValue(fakeRepo)],
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [Locale('en', '')],
+          home: ForgotPasswordScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final resetEmailField = tester.widget<TextFormField>(find.byType(TextFormField).at(0));
+    expect(resetEmailField.validator!(null), l10n.emailRequired);
+    expect(resetEmailField.validator!('invalid'), l10n.invalidEmail);
+    expect(resetEmailField.validator!('user@test.com'), null);
   });
 
   testWidgets('VerifyEmail resend countdown and auto-submit at 6 digits', (WidgetTester tester) async {

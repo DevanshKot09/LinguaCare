@@ -23,6 +23,8 @@ class SignUpScreen extends ConsumerStatefulWidget {
 }
 
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
+  static final RegExp _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -319,7 +321,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.emailRequired;
                 }
-                if (!value.contains('@') || !value.contains('.')) {
+                if (!_emailRegex.hasMatch(value.trim())) {
                   return l10n.invalidEmail;
                 }
                 return null;
