@@ -335,6 +335,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               prefixIcon: Icons.lock_rounded,
               suffixIcon: IconButton(
                 icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               ),
               validator: (value) {
@@ -361,6 +362,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               prefixIcon: Icons.lock_outline_rounded,
               suffixIcon: IconButton(
                 icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
+                tooltip: _obscureConfirm ? 'Show password' : 'Hide password',
                 onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
               ),
               validator: (value) {
