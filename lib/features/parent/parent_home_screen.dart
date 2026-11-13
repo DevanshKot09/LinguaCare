@@ -337,6 +337,7 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.settings),
+          tooltip: 'Settings',
           onPressed: () => context.go('/settings'),
         ),
       ],
