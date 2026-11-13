@@ -75,6 +75,7 @@ class _SpecialistHomeScreenState extends ConsumerState<SpecialistHomeScreen> {
         if (_currentIndex != 3)
           IconButton(
             icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
             onPressed: () => context.go('/settings'),
           ),
       ],
