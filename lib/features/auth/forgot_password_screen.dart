@@ -18,6 +18,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+  static final RegExp _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
@@ -108,6 +110,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.emailRequired;
+                  }
+                  if (!_emailRegex.hasMatch(value.trim())) {
+                    return l10n.invalidEmail;
                   }
                   return null;
                 },
